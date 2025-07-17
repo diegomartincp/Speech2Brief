@@ -1,28 +1,31 @@
 FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
-# Instala dependencias del sistema (Python, pip, ffmpeg, etc.)
+# Instala dependencias básicas del sistema
 RUN apt-get update && \
     apt-get install -y python3 python3-pip ffmpeg git && \
     apt-get clean
 
-# Configura variables de entorno recomendadas
+# Variables de entorno comunes
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 ENV PYTHONUNBUFFERED=1
 
-# Copia los archivos del proyecto al contenedor
+# Directorio de trabajo
 WORKDIR /workspace
-COPY . /workspace
 
-# Crea la carpeta temporal si no existe
+# Copia sólo requirements.txt y archivos de dependencias primero
+COPY requirements.txt /workspace/
+
+# Instala librerías Python
+RUN pip3 install --upgrade pip 
+RUN pip3 install -r requirements.txt
+
+# Copia el resto del código fuente y archivos del proyecto
+COPY . /workspace/
+
+# Crea carpeta temporal si es necesario
 RUN mkdir -p /workspace/temp
 
-# Instala dependencias de Python a partir de requirements.txt
-RUN pip3 install --upgrade pip \
-    && pip3 install --no-cache-dir -r requirements.txt
-
-# Expone el puerto usado por Flask
 EXPOSE 5000
 
-# Comando para ejecutar tu API Flask
 CMD ["python3", "app.py"]

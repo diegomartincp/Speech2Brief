@@ -1,0 +1,122 @@
+services:
+  llama3-basic:
+    build:
+      context: ./llama3
+      dockerfile: Dockerfile
+    profiles: ["basic"]
+    environment:
+      - LLAMA_MODEL=llama3:8b
+    ports:
+      - "11434:11434"
+    volumes:
+      - llama3_basic:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  resumer-basic:
+    build: .
+    profiles: ["basic"]
+    environment:
+      - BATCH_SIZE=2
+      - WHISPERX_MODEL=small
+      - OLLAMA_HOST=http://llama3-basic:11434
+      - LLAMA_MODEL=llama3:8b
+    depends_on:
+      - llama3-basic
+    ports:
+      - "5000:5000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  llama3-medium:
+    build:
+      context: ./llama3
+      dockerfile: Dockerfile
+    profiles: ["medium"]
+    environment:
+      - LLAMA_MODEL=llama3:8b
+    ports:
+      - "11434:11434"
+    volumes:
+      - llama3_medium:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  resumer-medium:
+    build: .
+    profiles: ["medium"]
+    environment:
+      - BATCH_SIZE=4
+      - WHISPERX_MODEL=medium
+      - OLLAMA_HOST=http://llama3-medium:11434
+      - LLAMA_MODEL=llama3:8b
+    depends_on:
+      - llama3-medium
+    ports:
+      - "5000:5000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  llama3-large:
+    build:
+      context: ./llama3
+      dockerfile: Dockerfile
+    profiles: ["large"]
+    environment:
+      - LLAMA_MODEL=llama3:8b
+    ports:
+      - "11434:11434"
+    volumes:
+      - llama3_large:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  resumer-large:
+    build: .
+    profiles: ["large"]
+    environment:
+      - BATCH_SIZE=8
+      - WHISPERX_MODEL=medium
+      - OLLAMA_HOST=http://llama3-large:11434
+      - LLAMA_MODEL=llama3:8b
+    depends_on:
+      - llama3-large
+    ports:
+      - "5000:5000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  llama3_basic:
+  llama3_medium:
+  llama3_large:
