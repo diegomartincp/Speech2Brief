@@ -114,7 +114,6 @@ or
 or
 
 ```bash
-  ```bash
   docker compose --profile small up -d
 ```
 ### 3 Send a request to the endpoint:
