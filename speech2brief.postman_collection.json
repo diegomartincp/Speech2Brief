@@ -1,0 +1,39 @@
+{
+	"info": {
+		"_postman_id": "2cab14e5-63ea-4a0a-88d7-59b3fa04848e",
+		"name": "speech2brief",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19732347"
+	},
+	"item": [
+		{
+			"name": "speech2brief Request sample",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/campo/Documents/code/Speech2Brief/el-cub-de-los-poetas-muertos.mp3"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5000/summarize",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"summarize"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
