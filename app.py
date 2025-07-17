@@ -5,8 +5,9 @@ import requests
 from flask import Flask, request, jsonify
 from urllib3 import response
 import whisperx
+print("holaaaa")
 
-device = "cuda"
+device = os.environ.get("DEVICE", "cuda")
 
 TEMP_FOLDER = os.path.join(os.path.dirname(__file__), 'temp')
 os.makedirs(TEMP_FOLDER, exist_ok=True)
@@ -18,7 +19,11 @@ LLAMA_MODEL = os.environ.get("LLAMA_MODEL", "llama3:8b")
 
 
 app = Flask(__name__)
-model = whisperx.load_model(WHISPERX_MODEL, device)
+if device == "cpu":
+    model = whisperx.load_model(WHISPERX_MODEL, device="cpu", compute_type="float32")
+    print("--> USING CPU ONLY")
+else:
+    model = whisperx.load_model(WHISPERX_MODEL, device)
 """
 Generate a prompt for Llama 3 to summarize a meeting chronologically.
 """

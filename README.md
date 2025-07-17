@@ -52,9 +52,10 @@ This project can be run entirely via Docker and Docker Compose to streamline GPU
 
 | Profile  | WhisperX Model  | Llama 3 Model | Batch Size |  Intended Usage |
 | :------------ |:---------------:| :---------------:|:---------------:|:-----:|
-| basic     | small | llama3:8b | 2 | Laptops/entry-level PCs |
-| medium     | medium | llama3:8b | 4 | Powerful desktops/workstations |
-| large | medium | llama3:8b | 8 | Servers/high-throughput environments |
+| cpu     | small | llama3.2:1b | 1 | Laptops/entry-level PCs with NO GPU |
+| basic     | small | llama3:8b | 2 | Entry-level PCs with GPU |
+| medium     | medium | llama3:8b | 4 | Powerful desktops/workstations with GPU |
+| large | medium | llama3:8b | 8 | Servers/high-throughput environments with GPU |
 
 ### Details
 Profile details
@@ -78,7 +79,11 @@ large
 ## Run Locally
 
 ### 1 Build the desired image
+```bash
+  docker build -t resumer-cpu . -f Dockerfile.cpu
 
+```
+or
 ```bash
   docker compose build resumer-large
 ```
@@ -94,7 +99,10 @@ or
 ```
 
 ### 2 Deploy the desired profile
-
+```bash
+  docker compose --profile cpu up -d
+```
+or
 ```bash
   docker compose --profile large up -d
 ```

@@ -1,0 +1,18 @@
+FROM python:3.10-slim
+
+# Install required system packages
+RUN apt-get update && \
+    apt-get install -y ffmpeg git && \
+    apt-get clean
+
+WORKDIR /workspace
+
+COPY requirements.txt /workspace/
+RUN pip install --upgrade pip 
+RUN pip install -r requirements.txt
+
+COPY . /workspace/
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]

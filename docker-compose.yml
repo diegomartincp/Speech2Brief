@@ -1,4 +1,32 @@
 services:
+  llama3-cpu:
+    build:
+      context: ./llama3
+      dockerfile: Dockerfile
+    profiles: ["cpu"]
+    environment:
+      - LLAMA_MODEL=llama3.2:1b
+    ports:
+      - "11434:11434"
+    volumes:
+      - llama3_cpu:/root/.ollama
+
+
+  resumer-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    profiles: ["cpu"]
+    environment:
+      - BATCH_SIZE=1
+      - WHISPERX_MODEL=small
+      - OLLAMA_HOST=http://llama3-cpu:11434
+      - DEVICE=cpu
+      - LLAMA_MODEL=llama3.2:1b
+    depends_on:
+      - llama3-cpu
+    ports:
+      - "5000:5000"
   llama3-basic:
     build:
       context: ./llama3
@@ -25,7 +53,7 @@ services:
       - BATCH_SIZE=2
       - WHISPERX_MODEL=small
       - OLLAMA_HOST=http://llama3-basic:11434
-      - LLAMA_MODEL=llama3:8b
+      
     depends_on:
       - llama3-basic
     ports:
@@ -120,3 +148,4 @@ volumes:
   llama3_basic:
   llama3_medium:
   llama3_large:
+  llama3_cpu:
