@@ -2,7 +2,7 @@ services:
   llama3-cpu:
     build:
       context: ./llama3
-      dockerfile: Dockerfile
+      dockerfile: /Dockerfile
     profiles: ["cpu"]
     environment:
       - LLAMA_MODEL=llama3.2:1b
@@ -14,8 +14,8 @@ services:
 
   resumer-cpu:
     build:
-      context: .
-      dockerfile: Dockerfile.cpu
+      context: ..
+      dockerfile: docker/Dockerfile.cpu
     profiles: ["cpu"]
     environment:
       - BATCH_SIZE=1
@@ -30,7 +30,7 @@ services:
   llama3-basic:
     build:
       context: ./llama3
-      dockerfile: Dockerfile
+      dockerfile: /Dockerfile
     profiles: ["basic"]
     environment:
       - LLAMA_MODEL=llama3:8b
@@ -47,7 +47,9 @@ services:
               capabilities: [gpu]
 
   resumer-basic:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gpu
     profiles: ["basic"]
     environment:
       - BATCH_SIZE=2
@@ -69,7 +71,7 @@ services:
   llama3-medium:
     build:
       context: ./llama3
-      dockerfile: Dockerfile
+      dockerfile: /Dockerfile
     profiles: ["medium"]
     environment:
       - LLAMA_MODEL=llama3:8b
@@ -86,7 +88,9 @@ services:
               capabilities: [gpu]
 
   resumer-medium:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gpu
     profiles: ["medium"]
     environment:
       - BATCH_SIZE=4
@@ -108,7 +112,7 @@ services:
   llama3-large:
     build:
       context: ./llama3
-      dockerfile: Dockerfile
+      dockerfile: /Dockerfile
     profiles: ["large"]
     environment:
       - LLAMA_MODEL=llama3:8b
@@ -125,7 +129,9 @@ services:
               capabilities: [gpu]
 
   resumer-large:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gpu
     profiles: ["large"]
     environment:
       - BATCH_SIZE=8
