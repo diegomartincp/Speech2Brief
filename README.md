@@ -14,40 +14,36 @@ NVIDIA GPU with the required VRAM for your chosen profile
 
 Latest NVIDIA drivers installed on the host system
 
-## API endpoint `POST /summarize`
-
-#### Request
-multipart/form-data
-    - file: The audio file to be transcribed and summarized (required).
-
-#### Response (example)
-
-```javascript
-{
-  "processing_time_seconds": 6.04,
-  "resumen": "Chronological summary of the meeting: ...",
-  "transcription": [
-    {
-      "start": 7.118,
-      "end": 28.55,
-      "text": "A person is not just tired, but exhausted. ..."
-    },
-    {
-      "start": 32.515,
-      "end": 62.367,
-      "text": "Communication. No, to court women. Today we'll talk about William Shakespeare. ..."
-    }
-    // ...more transcript segments...
-  ]
-}`
-```
-
-
 ## Local installation
 Instructions for installing and running the project locally (without Docker) are provided in INSTALL.md.
 
 
 ## Dockerized installation (recommended)
+## Run Locally
+
+```bash
+  docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
+```
+or
+```bash
+  docker compose -f docker/docker-compose.yml --profile large --project-name speech2brief up --build -d
+```
+or
+```bash
+  docker compose -f docker/docker-compose.yml --profile medium --project-name speech2brief up --build -d
+```
+or
+```bash
+  docker compose -f docker/docker-compose.yml --profile small --project-name speech2brief up --build -d
+```
+
+### 2 Send a request to the endpoint:
+Example using curl:
+
+```curl
+curl -F "file=@yourmeeting.mp3" http://localhost:5000/summarize
+```
+
 This project can be run entirely via Docker and Docker Compose to streamline GPU usage, model management, and service orchestration. The Compose setup offers three profiles, each tailored to different system resources and performance needs.
 
 | Profile  | WhisperX Model  | Llama 3 Model | Batch Size |  Intended Usage |
@@ -76,49 +72,30 @@ large
 - Llama 3 8B, ultra-fast.
 - Designed for GPU servers with 8 or more VRAM GB.
 
-## Run Locally
+## API endpoint `POST /summarize`
 
-### 1 Build the desired image
-```bash
-  docker build -t resumer-cpu . -f Dockerfile.cpu
+#### Request
+multipart/form-data
+    - file: The audio file to be transcribed and summarized (required).
 
-```
-or
-```bash
-  docker compose build resumer-large
-```
-or
+#### Response (example)
 
-```bash
-  docker compose build resumer-medium
-```
-or
-
-```bash
-  docker compose build resumer-small
-```
-
-### 2 Deploy the desired profile
-```bash
-  docker compose --profile cpu up -d
-```
-or
-```bash
-  docker compose --profile large up -d
-```
-or
-
-```bash
-  docker compose --profile madium up -d
-```
-or
-
-```bash
-  docker compose --profile small up -d
-```
-### 3 Send a request to the endpoint:
-Example using curl:
-
-```curl
-curl -F "file=@yourmeeting.mp3" http://localhost:5000/summarize
+```javascript
+{
+  "processing_time_seconds": 6.04,
+  "resumen": "Chronological summary of the meeting: ...",
+  "transcription": [
+    {
+      "start": 7.118,
+      "end": 28.55,
+      "text": "A person is not just tired, but exhausted. ..."
+    },
+    {
+      "start": 32.515,
+      "end": 62.367,
+      "text": "Communication. No, to court women. Today we'll talk about William Shakespeare. ..."
+    }
+    // ...more transcript segments...
+  ]
+}`
 ```
