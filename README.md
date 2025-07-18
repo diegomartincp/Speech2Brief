@@ -54,9 +54,13 @@ This project can be run entirely via Docker and Docker Compose to streamline GPU
 | large | medium | llama3:8b | 8 | Servers/high-throughput environments with GPU |
 
 ### Details
-Profile details
-basic
+cpu
+- Slow transcription (WhisperX small model).
+- Efficient batch size (2).
+- llama3.2:1b, very lightweight model for quick results using CPU only.
+- Suitable for laptops and less powerful PCs with no GPU.
 
+basic
 - Fast, lightweight transcription (WhisperX small model).
 -  Efficient batch size (2).
 - Llama 3 8B, ideal for quick summaries.
