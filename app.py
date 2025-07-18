@@ -45,7 +45,8 @@ def make_summary_prompt(segments):
         "Omit unnecessary greetings and transcription errors, but include agreements, questions, decisions, and points of dispute.\n\n"
         "The transcription of the meeting is as follows (each line includes the segment and its timestamp):\n"
         f"{transcript_str}\n\n"
-        "Now, write a structured summary following the chronology of the conversation, in English, brief but covering all the important topics."
+        "Now, write a structured summary following the chronology of the conversation, brief but covering all the important topics."
+        "Always answer in the same languaje the transcription is"
     )
     return prompt
 """
