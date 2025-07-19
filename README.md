@@ -27,20 +27,40 @@ Instructions for installing and running the project locally (without Docker) are
 
 ### Dockerized installation (recommended)
 ```bash
-  docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
+docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
 ```
 or
 ```bash
-  docker compose -f docker/docker-compose.yml --profile large --project-name speech2brief up --build -d
+docker compose -f docker/docker-compose.yml --profile large --project-name speech2brief up --build -d
 ```
 or
 ```bash
-  docker compose -f docker/docker-compose.yml --profile medium --project-name speech2brief up --build -d
+docker compose -f docker/docker-compose.yml --profile medium --project-name speech2brief up --build -d
 ```
 or
 ```bash
-  docker compose -f docker/docker-compose.yml --profile small --project-name speech2brief up --build -d
+docker compose -f docker/docker-compose.yml --profile basic --project-name speech2brief up --build -d
 ```
+### Deploy Telegram Bot (optional)
+```bash
+docker build -f docker/telegram-bot/Dockerfile -t telegram-bot:latest docker/telegram-bot
+
+```
+and then
+```bash
+docker run -d \
+  --name speech2brief-telegram-bot \
+  --network speech2brief_default \
+  --label com.docker.compose.project=speech2brief \
+  -e TELEGRAM_BOT_TOKEN=your_real_token \
+  -e PROFILE=cpu \
+  telegram-bot:latest
+```
+Profile should be one of the following:
+- cpu
+- basic
+- medium
+- large
 
 This project can be run entirely via Docker and Docker Compose to streamline GPU usage, model management, and service orchestration. The Compose setup offers three profiles, each tailored to different system resources and performance needs.
 

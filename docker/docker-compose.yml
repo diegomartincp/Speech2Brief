@@ -1,4 +1,5 @@
 services:
+# CPU profile
   llama3-cpu:
     build:
       context: ./llama3
@@ -10,7 +11,6 @@ services:
       - "11434:11434"
     volumes:
       - llama3_cpu:/root/.ollama
-
 
   resumer-cpu:
     build:
@@ -27,6 +27,8 @@ services:
       - llama3-cpu
     ports:
       - "5000:5000"
+
+# basic profile
   llama3-basic:
     build:
       context: ./llama3
@@ -68,6 +70,7 @@ services:
               count: all
               capabilities: [gpu]
 
+# medium profile
   llama3-medium:
     build:
       context: ./llama3
@@ -108,6 +111,8 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
+# large profile
 
   llama3-large:
     build:

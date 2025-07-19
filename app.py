@@ -5,7 +5,7 @@ import requests
 from flask import Flask, request, jsonify
 from urllib3 import response
 import whisperx
-print("holaaaa")
+print("--> Starting")
 
 device = os.environ.get("DEVICE", "cuda")
 
@@ -24,6 +24,7 @@ if device == "cpu":
     print("--> USING CPU ONLY")
 else:
     model = whisperx.load_model(WHISPERX_MODEL, device)
+    print("--> USING GPU")
 """
 Generate a prompt for Llama 3 to summarize a meeting chronologically.
 """
@@ -38,16 +39,19 @@ def make_summary_prompt(segments):
         transcript.append(f"[{m1:02d}:{s1:02d}–{m2:02d}:{s2:02d}] {seg['text']}".strip())
     transcript_str = "\n".join(transcript)
 
-
     prompt = (
-        "You are an assistant specialized in creating detailed and chronological summaries of transcribed meetings.\n\n"
-        "Your task is to generate a summary that faithfully reflects the content, grouping information in chronological order and using clear and concise sentences.\n"
-        "Omit unnecessary greetings and transcription errors, but include agreements, questions, decisions, and points of dispute.\n\n"
-        "The transcription of the meeting is as follows (each line includes the segment and its timestamp):\n"
+        "You will receive a text transcript of an audio message. "
+        "The message might be a personal voice note or a conversation between multiple people, like a meeting.\n\n"
+        "Determine what kind of message it is, and write a proper summary based on the content. "
+        "Do not repeat the full text or paraphrase it. Focus on the key points: what was said, decided, asked, or reflected.\n\n"
+        "Always answer in the original language of the transcript. Do not translate it. If the transcript is in Spanish then answer in Spanish.\n\n"
+        "Enfatize the key points of the transcript in chronological order\n\n"
+        "Write the summary in natural, plain language, without headings, timestamps, or labels.\n\n"
+        "Transcript:\n"
         f"{transcript_str}\n\n"
-        "Now, write a structured summary following the chronology of the conversation, brief but covering all the important topics."
-        "Always answer in the same languaje the transcription is"
+        "Summary:"
     )
+
     return prompt
 """
 Calls ollama endpoint and returns the response as a string.
@@ -112,6 +116,8 @@ def summarize():
         ],
         "processing_time_seconds": round(elapsed_seconds, 2)
     }
+    print("\n📍 Summary generated:")
+    print(resumen)
     return jsonify(response)
 
 # Endpoints de salud (para Docker healthcheck)
