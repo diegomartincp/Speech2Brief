@@ -1,31 +1,60 @@
+# Speech2Brief - Transcriber & Chronological Summarizer 
+I'm excited to announce Speech2Brief v1.0.0, the first stable release of our automatic meeting/audio summarization API & bot!
+Turn any audio—from business meetings to WhatsApp voice notes—into clear, chronological summaries, all with your own hardware and total privacy.
 
-# speech2brief - Transcriber & Chronological Summarizer 
 Speech2Brief is a powerful and efficient HTTP API for automatically converting speech into structured, chronological meeting notes. It combines the speed of [WhisperX](https://github.com/m-bain/whisperx) neural ASR (automatic speech recognition) system optimized for fast and accurate transcription—with the summarization capabilities of large language models (LLMs) served locally using [Ollama](https://ollama.com).
 
-## 🔍 What it does
-- ⏱️ A precisely segmented transcription, time-aligned, using WhisperX on CPU or GPU
-- ✍️ A chronologically structured summary, written by a locally served Llama 3 model
-- 💡 All processed with minimum latency and no external dependencies
+- [🧠 Built on advanced AI models](#-built-on-advanced-ai-models)
+- [💡 Key Features](#-key-features)
+- [🛠️ What is Included](#-what-is-included)
+- [🤔 Why Speech2Brief?](#-why-speech2brief)
+- [🖥️ Requirements for GPU usage](#-requirements-for-gpu-usage)
+- [🖥️ Local installation](#-local-installation)
+   * [⚙️ Dockerized installation (recommended)](#-dockerized-installation-recommended)
+   * [💬 Deploy Telegram Bot (optional)](#-deploy-telegram-bot-optional)
+   * [📑 Details](#-details)
+- [🌐 API endpoint `POST /summarize`](#-api-endpoint-post-summarize)
+   * [🌐 Send a request to the endpoint:](#-send-a-request-to-the-endpoint)
+   * [Request](#request)
+   * [🌐 Response (example)](#-response-example)
 
 ## 🧠 Built on advanced AI models
 - ✅ **WhisperX** (based on OpenAI's Whisper neural model) delivers fast speech recognition with time alignment and multilingual capabilities.
 - ✅ **Llama 3** (via Ollama) generates context-aware, concise summaries from transcripts, leveraging state-of-the-art LLMs running locally.
 
-## 🚀 Why Speech2Brief?
+## 💡 Key Features
+- 100% Local Processing: All transcription and summarization runs on your own hardware. No data ever leaves your machine.
+- High-speed transcription & summarization: Processes audio in seconds
+- Chronological structure: Captures discussion flow, agreements, and major decisions
+- Telegram Bot Integration: Interact with Speech2Brief from any device—send a voice message or audio file to the Telegram bot and receive back a structured summary instantly.
+- Multi-Language: Accurately transcribes and summarizes input in the original language of the audio, supporting meetings, interviews, and personal voice notes.
+- Broad Audio Support: Works with standard audio file formats such as .mp3, .wav, .ogg, .opus, as well as voice messages from apps like WhatsApp and Telegram. (Yes, also works with Whatsapp audio message files)
+- Docker & Local Installation: Flexible deployment options—choose between quick Docker Compose profiles (for GPU or CPU) or native installation. 
+
+## 🛠️ What is Included
+- Full HTTP API for fast speech-to-summary processing
+- Accurate, segmented transcriptions via WhisperX (supports CPU and GPU, multi-language)
+- Chronological, clean summaries powered by locally run Llama 3 models (Ollama backend)
+- Supports any audio source: meetings, interviews, or personal voice notes (e.g., WhatsApp audios)
+- Multiple deployment profiles: cpu, basic, medium, large—optimizing for any machine
+- 100% local inference: your data never leaves your environment
+- Easy integration with Telegram bot (optional microservice)
+
+## 🤔 Why Speech2Brief?
 - ⚡ **High speed:** Full transcription and summarization happen in seconds, thanks to optimized GPU or CPU execution.
 - 💬 **Chronological structure:** Summaries retain the order of discussion, decisions, and speaker intent.
 - 🔒 **100% local:** No external APIs. All inference runs inside your environment—with your hardware, your data.
 - 🔧 **Flexible deployment:** Easily switch between CPU-only, GPU, and high-resource modes with Docker profiles.
 
-## Requirements for GPU usage
+## 🖥️ Requirements for GPU usage
 - **NVIDIA GPU** with the required VRAM for your chosen profile
 - Latest **NVIDIA drivers** installed on the host system
 
-## Local installation
+## 🖥️ Local installation
 Instructions for installing and running the project locally (without Docker) are provided in [INSTALL.md](INSTALL.md).
 
 
-### Dockerized installation (recommended)
+### ⚙️ Dockerized installation (recommended)
 ```bash
 docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
 ```
@@ -41,7 +70,7 @@ or
 ```bash
 docker compose -f docker/docker-compose.yml --profile basic --project-name speech2brief up --build -d
 ```
-### Deploy Telegram Bot (optional)
+### 💬 Deploy Telegram Bot (optional)
 ```bash
 docker build -f docker/telegram-bot/Dockerfile -t telegram-bot:latest docker/telegram-bot
 
@@ -71,7 +100,7 @@ This project can be run entirely via Docker and Docker Compose to streamline GPU
 | medium     | medium | llama3:8b | 4 | Powerful desktops/workstations with GPU |
 | large | medium | llama3:8b | 8 | Servers/high-throughput environments with GPU |
 
-### Details
+### 📑 Details
 **cpu**
 - Slow transcription (WhisperX small model).
 - Efficient batch size (2).
@@ -94,9 +123,9 @@ This project can be run entirely via Docker and Docker Compose to streamline GPU
 - Llama 3 8B, ultra-fast.
 - Designed for GPU servers with 8 or more VRAM GB.
 
-## API endpoint `POST /summarize`
+## 🌐 API endpoint `POST /summarize`
 
-### Send a request to the endpoint:
+### 🌐 Send a request to the endpoint:
 Example using curl:
 
 ```curl
@@ -107,7 +136,7 @@ curl -F "file=@yourmeeting.mp3" http://localhost:5000/summarize
 multipart/form-data:
   - file: The audio file to be transcribed and summarized (required).
 
-### Response (example)
+### 🌐 Response (example)
 
 ```javascript
 {
