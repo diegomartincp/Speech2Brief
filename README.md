@@ -8,7 +8,7 @@ Speech2Brief is a powerful and efficient HTTP API for automatically converting s
 - [💡 Key Features](#-key-features)
 - [🛠️ What is Included](#-what-is-included)
 - [🤔 Why Speech2Brief?](#-why-speech2brief)
-- [🖥️ Requirements for GPU usage](#-requirements-for-gpu-usage)
+- [⚡ Requirements for GPU usage](#-requirements-for-gpu-usage)
 - [🖥️ Local installation](#-local-installation)
    * [⚙️ Manual installation (Not recommended)](#-manual-installation-not-recommended)
    * [⚙️ Dockerized installation (Recommended)](#-dockerized-installation-recommended)
@@ -47,7 +47,7 @@ Speech2Brief is a powerful and efficient HTTP API for automatically converting s
 - 🔒 **100% local:** No external APIs. All inference runs inside your environment—with your hardware, your data.
 - 🔧 **Flexible deployment:** Easily switch between CPU-only, GPU, and high-resource modes with Docker profiles.
 
-## 🖥️ Requirements for GPU usage
+## ⚡ Requirements for GPU usage
 - **NVIDIA GPU** with the required VRAM for your chosen profile
 - Latest **NVIDIA drivers** installed on the host system
 
