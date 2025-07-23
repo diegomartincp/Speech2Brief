@@ -10,12 +10,13 @@ Speech2Brief is a powerful and efficient HTTP API for automatically converting s
 - [🤔 Why Speech2Brief?](#-why-speech2brief)
 - [🖥️ Requirements for GPU usage](#-requirements-for-gpu-usage)
 - [🖥️ Local installation](#-local-installation)
-   * [⚙️ Dockerized installation (recommended)](#-dockerized-installation-recommended)
+   * [⚙️ Manual installation (Not recommended)](#-manual-installation-not-recommended)
+   * [⚙️ Dockerized installation (Recommended)](#-dockerized-installation-recommended)
    * [💬 Deploy Telegram Bot (optional)](#-deploy-telegram-bot-optional)
    * [📑 Details](#-details)
 - [🌐 API endpoint `POST /summarize`](#-api-endpoint-post-summarize)
    * [🌐 Send a request to the endpoint:](#-send-a-request-to-the-endpoint)
-   * [Request](#request)
+   * [🌐 Request](#request)
    * [🌐 Response (example)](#-response-example)
 
 ## 🧠 Built on advanced AI models
@@ -51,10 +52,11 @@ Speech2Brief is a powerful and efficient HTTP API for automatically converting s
 - Latest **NVIDIA drivers** installed on the host system
 
 ## 🖥️ Local installation
+### ⚙️ Manual installation (Not recommended)
 Instructions for installing and running the project locally (without Docker) are provided in [INSTALL.md](INSTALL.md).
 
 
-### ⚙️ Dockerized installation (recommended)
+### ⚙️ Dockerized installation (Recommended)
 ```bash
 docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
 ```
@@ -132,7 +134,7 @@ Example using curl:
 curl -F "file=@yourmeeting.mp3" http://localhost:5000/summarize
 ```
 
-### Request
+### 🌐 Request
 multipart/form-data:
   - file: The audio file to be transcribed and summarized (required).
 
