@@ -42,17 +42,19 @@ def make_summary_prompt(segments):
     prompt = (
         "You will receive a text transcript of an audio message. "
         "The message might be a personal voice note or a conversation between multiple people, like a meeting.\n\n"
+        "In Spanish, the word 'tío' or 'tía' is often used as informal slang to address a friend or someone informally, not necessarily meaning 'uncle' or 'aunt'. "
+        "Unless the context clearly refers to a family relationship, interpret 'tío' and 'tía' as slang forms of address (like 'dude', 'mate', or 'hey man' in English) and do not suggest a family relation if is not obvious.\n\n"
         "Determine what kind of message it is, and write a proper summary based on the content. "
         "Focus on the key points: what was said, decided, asked, or reflected.\n\n"
         "Be detailed about the specific things that are mentioned in the transcript.\n\n"
         "For example, if multiple ideas are shared about a specific topic, do not limit to mention the topic but also mention the specific ideas and how they were discussed.\n\n"
         "Always answer in the original language of the transcript. Do not translate it. If the transcript is in Spanish then answer in Spanish.\n\n"
-        "Follow the order of the transcript in chronological order\n\n"
+        "Follow the order of the transcript in chronological order.\n\n"
         "Write the summary in natural, plain language, without headings, timestamps, or labels.\n\n"
         "Transcript:\n"
         f"{transcript_str}\n\n"
         "Summary:"
-    )
+    )   
 
     return prompt
 """
