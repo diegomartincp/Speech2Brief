@@ -172,37 +172,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Built on Advanced AI Models
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Speech2Brief combines the speed of WhisperX neural ASR with the summarization 
-              capabilities of large language models served locally using Ollama.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="border-primary/10 hover:border-primary/30 transition-colors">
-                <CardContent className="p-6">
-                  <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Upload Section */}
       <section id="upload-section" className="py-20 bg-background">
         <div className="container mx-auto px-4 max-w-4xl">
@@ -249,6 +218,38 @@ const Index = () => {
           )}
         </div>
       </section>
+
+      {/* Features Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Built on Advanced AI Models
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Speech2Brief combines the speed of WhisperX neural ASR with the summarization 
+              capabilities of large language models served locally using Ollama.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="border-primary/10 hover:border-primary/30 transition-colors">
+                <CardContent className="p-6">
+                  <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4">
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
 
       {/* Footer */}
       <footer className="bg-muted/30 py-12">
