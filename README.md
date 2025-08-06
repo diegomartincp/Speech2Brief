@@ -1,9 +1,12 @@
 # Speech2Brief - Transcriber & Chronological Summarizer 
-I'm excited to announce Speech2Brief v1.0.0, the first stable release of our automatic meeting/audio summarization API & bot!
+I'm excited to announce Speech2Brief **V1**, the first stable release of our automatic meeting/audio summarization app, API & bot!
 Turn any audio—from business meetings to WhatsApp voice notes—into clear, chronological summaries, all with your own hardware and total privacy.
 
 Speech2Brief is a powerful, self-hosted and efficient HTTP API for automatically converting speech into structured, chronological meeting notes. It combines the speed of [WhisperX](https://github.com/m-bain/whisperx) neural ASR (automatic speech recognition) system optimized for fast and accurate transcription—with the summarization capabilities of large language models (LLMs) served locally using [Ollama](https://ollama.com).
 
+![Speech2Brief frontend](/utils/frontend.png "Frontend")
+
+---
 - [🧠 Built on advanced AI models](#-built-on-advanced-ai-models)
 - [💡 Key Features](#-key-features)
 - [🛠️ What is Included](#-what-is-included)
