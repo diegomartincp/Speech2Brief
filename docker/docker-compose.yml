@@ -1,9 +1,24 @@
 services:
-# CPU profile
+
+  # CPU profile
+  frontend-cpu:
+    container_name: speech2brief-frontend-cpu
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    image: speech2brief-frontend-cpu:latest
+    profiles: ["cpu"]
+    environment:
+      - VITE_API_URL=http://speech2brief-resumer-cpu:5000
+    ports:
+      - "8081:80"
+
   llama3-cpu:
+    container_name: speech2brief-llama3-cpu
     build:
       context: ./llama3
       dockerfile: Dockerfile
+    image: speech2brief-llama3-cpu:latest      # <-- Custom image name
     profiles: ["cpu"]
     environment:
       - LLAMA_MODEL=llama3.2:1b
@@ -13,14 +28,16 @@ services:
       - llama3_cpu:/root/.ollama
 
   resumer-cpu:
+    container_name: speech2brief-resumer-cpu
     build:
       context: ..
       dockerfile: docker/Dockerfile.cpu
+    image: speech2brief-resumer-cpu:latest     # <-- Custom image name
     profiles: ["cpu"]
     environment:
       - BATCH_SIZE=1
       - WHISPERX_MODEL=small
-      - OLLAMA_HOST=http://llama3-cpu:11434
+      - OLLAMA_HOST=http://speech2brief-llama3-cpu:11434
       - DEVICE=cpu
       - LLAMA_MODEL=llama3.2:1b
     depends_on:
@@ -28,11 +45,25 @@ services:
     ports:
       - "5000:5000"
 
-# basic profile
+  # Basic profile
+  frontend-basic:
+    container_name: speech2brief-frontend-basic
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    image: speech2brief-frontend-basic:latest
+    profiles: ["basic"]
+    environment:
+      - VITE_API_URL=http://speech2brief-resumer-basic:5000
+    ports:
+      - "8081:80"
+
   llama3-basic:
+    container_name: speech2brief-llama3-basic
     build:
       context: ./llama3
       dockerfile: Dockerfile
+    image: speech2brief-llama3-basic:latest    # <-- Custom image name
     profiles: ["basic"]
     environment:
       - LLAMA_MODEL=llama3:8b
@@ -49,15 +80,16 @@ services:
               capabilities: [gpu]
 
   resumer-basic:
+    container_name: speech2brief-resumer-basic
     build:
       context: ..
       dockerfile: docker/Dockerfile.gpu
+    image: speech2brief-resumer-basic:latest   # <-- Custom image name
     profiles: ["basic"]
     environment:
       - BATCH_SIZE=2
       - WHISPERX_MODEL=small
-      - OLLAMA_HOST=http://llama3-basic:11434
-      
+      - OLLAMA_HOST=http://speech2brief-llama3-basic:11434
     depends_on:
       - llama3-basic
     ports:
@@ -70,11 +102,25 @@ services:
               count: all
               capabilities: [gpu]
 
-# medium profile
+  # Medium profile
+  frontend-medium:
+    container_name: speech2brief-frontend-medium
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    image: speech2brief-frontend:latest
+    profiles: ["medium"]
+    environment:
+      - VITE_API_URL=http://speech2brief-resumer-medium:5000
+    ports:
+      - "8081:80"
+
   llama3-medium:
+    container_name: speech2brief-llama3-medium
     build:
       context: ./llama3
       dockerfile: Dockerfile
+    image: speech2brief-llama3-medium:latest
     profiles: ["medium"]
     environment:
       - LLAMA_MODEL=llama3:8b
@@ -91,14 +137,16 @@ services:
               capabilities: [gpu]
 
   resumer-medium:
+    container_name: speech2brief-resumer-medium
     build:
       context: ..
       dockerfile: docker/Dockerfile.gpu
+    image: speech2brief-resumer-medium:latest
     profiles: ["medium"]
     environment:
       - BATCH_SIZE=4
       - WHISPERX_MODEL=medium
-      - OLLAMA_HOST=http://llama3-medium:11434
+      - OLLAMA_HOST=http://speech2brief-llama3-medium:11434
       - LLAMA_MODEL=llama3:8b
     depends_on:
       - llama3-medium
@@ -112,12 +160,25 @@ services:
               count: all
               capabilities: [gpu]
 
-# large profile
+  # Large profile
+  frontend-large:
+    container_name: speech2brief-frontend-large
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    image: speech2brief-frontend-large:latest
+    profiles: ["large"]
+    environment:
+      - VITE_API_URL=http://speech2brief-resumer-large:5000
+    ports:
+      - "8081:80"
 
   llama3-large:
+    container_name: speech2brief-llama3-large
     build:
       context: ./llama3
       dockerfile: Dockerfile
+    image: speech2brief-llama3-large:latest
     profiles: ["large"]
     environment:
       - LLAMA_MODEL=llama3:8b
@@ -134,14 +195,16 @@ services:
               capabilities: [gpu]
 
   resumer-large:
+    container_name: speech2brief-resumer-large
     build:
       context: ..
       dockerfile: docker/Dockerfile.gpu
+    image: speech2brief-resumer-large:latest
     profiles: ["large"]
     environment:
       - BATCH_SIZE=8
       - WHISPERX_MODEL=medium
-      - OLLAMA_HOST=http://llama3-large:11434
+      - OLLAMA_HOST=http://speech2brief-llama3-large:11434
       - LLAMA_MODEL=llama3:8b
     depends_on:
       - llama3-large

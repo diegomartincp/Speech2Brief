@@ -5,6 +5,9 @@ import requests
 from flask import Flask, request, jsonify
 from urllib3 import response
 import whisperx
+from flask_cors import CORS
+
+
 print("--> Starting")
 
 device = os.environ.get("DEVICE", "cuda")
@@ -19,6 +22,8 @@ LLAMA_MODEL = os.environ.get("LLAMA_MODEL", "llama3:8b")
 
 
 app = Flask(__name__)
+CORS(app) # Enable CORS
+
 if device == "cpu":
     model = whisperx.load_model(WHISPERX_MODEL, device="cpu", compute_type="float32")
     print("--> USING CPU ONLY")
