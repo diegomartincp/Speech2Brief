@@ -17,8 +17,11 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onFileSelect, disabled
   const chunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
 
-  const supportedFormats = ['.mp3', '.wav', '.ogg', '.opus'];
-  const maxFileSize = 50 * 1024 * 1024; // 50MB
+  const supportedFormats = [
+    '.wav', '.ogg', '.mp3', '.aac', '.flac', '.m4a', '.oga', '.opus',
+    '.mp4', '.mkv', '.webm', '.flv', '.avi', '.mov', '.wmv', '.m4v',
+  ];
+  const maxFileSize = 500 * 1024 * 1024; // 500MB
 
   const validateFile = (file: File): boolean => {
     const extension = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -35,7 +38,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onFileSelect, disabled
     if (file.size > maxFileSize) {
       toast({
         title: "File too large",
-        description: "Please upload a file smaller than 50MB",
+        description: "Please upload a file smaller than 500MB",
         variant: "destructive"
       });
       return false;
@@ -127,12 +130,12 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onFileSelect, disabled
             </div>
             
             <div>
-              <h3 className="text-lg font-semibold mb-2">Upload Audio File</h3>
+              <h3 className="text-lg font-semibold mb-2">Upload Audio/Video File</h3>
               <p className="text-muted-foreground mb-4">
-                Drag and drop your audio file here, or click to browse
+                Drag and drop your audio/video file here, or click to browse
               </p>
               <p className="text-sm text-muted-foreground">
-                Supported formats: {supportedFormats.join(', ')} • Max size: 50MB
+                Supported formats: {supportedFormats.join(', ')} • Max size: 500MB
               </p>
             </div>
 

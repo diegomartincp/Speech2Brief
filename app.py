@@ -6,6 +6,8 @@ from flask import Flask, request, jsonify
 from urllib3 import response
 import whisperx
 from flask_cors import CORS
+from audio_extract import extract_audio
+
 
 
 print("--> Starting")
@@ -47,8 +49,6 @@ def make_summary_prompt(segments):
     prompt = (
         "You will receive a text transcript of an audio message. "
         "The message might be a personal voice note or a conversation between multiple people, like a meeting.\n\n"
-        "In Spanish, the word 'tío' or 'tía' is often used as informal slang to address a friend or someone informally, not necessarily meaning 'uncle' or 'aunt'. "
-        "Unless the context clearly refers to a family relationship, interpret 'tío' and 'tía' as slang forms of address (like 'dude', 'mate', or 'hey man' in English) and do not suggest a family relation if is not obvious.\n\n"
         "Determine what kind of message it is, and write a proper summary based on the content. "
         "Focus on the key points: what was said, decided, asked, or reflected.\n\n"
         "Be detailed about the specific things that are mentioned in the transcript.\n\n"
@@ -82,7 +82,6 @@ def summarize_with_llama3(prompt):
         raise RuntimeError(f"Error calling Llama3: {str(e)}")
 
 
-
 @app.route('/summarize', methods=['POST'])
 def summarize():
     if 'file' not in request.files:
@@ -91,32 +90,66 @@ def summarize():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    temp_mp3_name = f"upload_{uuid.uuid4().hex}.mp3"
-    temp_mp3_path = os.path.join(TEMP_FOLDER, temp_mp3_name)
-    file.save(temp_mp3_path)
+    # Detecta extensión (fallback si no viene)
+    original_name = file.filename or "upload"
+    _, ext = os.path.splitext(original_name.lower())
+    if not ext:
+        ext = ".bin"
+
+    upload_name = f"upload_{uuid.uuid4().hex}{ext}"
+    upload_path = os.path.join(TEMP_FOLDER, upload_name)
+    file.save(upload_path)
+
+    # Decide si hay que extraer audio
+    video_exts = {".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv", ".wmv", ".m4v"}  # formatos típicos soportados
+    audio_path_for_whisper = upload_path
+
+    extracted_mp3_path = None
+    if ext in video_exts:
+        extracted_mp3_name = f"audio_{uuid.uuid4().hex}.mp3"
+        extracted_mp3_path = os.path.join(TEMP_FOLDER, extracted_mp3_name)
+
+        try:
+            # Extrae el audio del vídeo a mp3 (API oficial del paquete)
+            extract_audio(input_path=upload_path, output_path=extracted_mp3_path)
+            audio_path_for_whisper = extracted_mp3_path
+        except Exception as e:
+            # Limpieza y error claro
+            try:
+                os.remove(upload_path)
+            except:
+                pass
+            return jsonify({"error": f"Audio extraction failed: {str(e)}"}), 400
 
     segments = []
     start_time = time.time()
 
-    # Try to transcribe the audio
-    print(f"Transcribing audio from {temp_mp3_path}...")
     try:
-        audio = whisperx.load_audio(temp_mp3_path)
+        print(f"Transcribing audio from {audio_path_for_whisper}...")
+        audio = whisperx.load_audio(audio_path_for_whisper)
         result = model.transcribe(audio, batch_size=BATCH_SIZE)
         segments = result['segments']
     finally:
-        os.remove(temp_mp3_path)
+        # Limpieza de temporales
+        try:
+            os.remove(upload_path)
+        except:
+            pass
+        if extracted_mp3_path:
+            try:
+                os.remove(extracted_mp3_path)
+            except:
+                pass
+
     elapsed_seconds = time.time() - start_time
 
     prompt = make_summary_prompt(segments)
-    # Try to call Ollama to get the summary
+
     try:
-       resumen = summarize_with_llama3(prompt)
+        resumen = summarize_with_llama3(prompt)
     except Exception as e:
         return jsonify({"Error": str(e)}), 502
 
-    
-        
     response = {
         "resumen": resumen,
         "transcription": [
@@ -128,6 +161,7 @@ def summarize():
     print("\n📍 Summary generated:")
     print(resumen)
     return jsonify(response)
+
 
 # Endpoints de salud (para Docker healthcheck)
 @app.route('/health', methods=['GET'])
