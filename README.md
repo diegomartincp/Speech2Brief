@@ -4,20 +4,9 @@ Turn any audio or video, from business meetings to WhatsApp voice notes—into c
 
 Speech2Brief is a powerful, self-hosted and efficient HTTP API for automatically converting speech into structured, chronological meeting notes. It combines the speed of [WhisperX](https://github.com/m-bain/whisperx) neural ASR (automatic speech recognition) system optimized for fast and accurate transcription—with the summarization capabilities of large language models (LLMs) served locally using [Ollama](https://ollama.com).
 
-- [🧠 Built on advanced AI models](#-built-on-advanced-ai-models)
-- [💡 Key Features](#-key-features)
-- [🛠️ What is Included](#-what-is-included)
-- [🤔 Why Speech2Brief?](#-why-speech2brief)
-- [⚡ Requirements for GPU usage](#-requirements-for-gpu-usage)
-- [🖥️ Local installation](#-local-installation)
-   * [⚙️ Manual installation (Not recommended)](#-manual-installation-not-recommended)
-   * [⚙️ Dockerized installation (Recommended)](#-dockerized-installation-recommended)
-   * [💬 Deploy Telegram Bot (optional)](#-deploy-telegram-bot-optional)
-   * [📑 Details](#-details)
-- [🌐 API endpoint `POST /summarize`](#-api-endpoint-post-summarize)
-   * [🌐 Send a request to the endpoint:](#-send-a-request-to-the-endpoint)
-   * [🌐 Request](#request)
-   * [🌐 Response (example)](#-response-example)
+![Speech2Brief frontend](/utils/frontend.png "Frontend")
+
+---
 
 ## 🧠 Built on advanced AI models
 - ✅ **WhisperX** (based on OpenAI's Whisper neural model) delivers fast speech recognition with time alignment and multilingual capabilities.
@@ -51,12 +40,9 @@ Speech2Brief is a powerful, self-hosted and efficient HTTP API for automatically
 - **NVIDIA GPU** with the required VRAM for your chosen profile
 - Latest **NVIDIA drivers** installed on the host system
 
-## 🖥️ Local installation
-### ⚙️ Manual installation (Not recommended)
-Instructions for installing and running the project locally (without Docker) are provided in [INSTALL.md](INSTALL.md).
+## ⚙️ Local installation with Docker
 
-
-### ⚙️ Dockerized installation (Recommended)
+#### **After running in Docker open UI on [localhost:8081](http://localhost:808)**
 ```bash
 docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
 ```
