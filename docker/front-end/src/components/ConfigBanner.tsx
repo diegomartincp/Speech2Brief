@@ -37,6 +37,7 @@ export const ConfigBanner: React.FC<ConfigBannerProps> = ({ config, loading }) =
     );
   }
 
+  const isHybrid = config.profile.toLowerCase().includes('hybrid');
   const isAppleSilicon = config.profile.includes('apple-silicon') || (config.device === 'cpu' && config.profile.includes('silicon'));
 
   return (
@@ -47,9 +48,11 @@ export const ConfigBanner: React.FC<ConfigBannerProps> = ({ config, loading }) =
           <Badge 
             variant="default" 
             className={`font-semibold tracking-wide flex items-center gap-1.5 py-1 px-2.5 ${
-              isAppleSilicon 
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700' 
-                : 'bg-primary text-primary-foreground'
+              isHybrid
+                ? 'bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-sm hover:opacity-90'
+                : isAppleSilicon 
+                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700' 
+                  : 'bg-primary text-primary-foreground'
             }`}
           >
             <Cpu className="w-3.5 h-3.5" />

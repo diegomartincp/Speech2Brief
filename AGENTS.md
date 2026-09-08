@@ -23,13 +23,32 @@ All containers run under the Docker Compose project name `speech2brief`.
 
 | Profile | Target Architecture | Backend Port (Host:Container) | Frontend Port | WhisperX Model / Compute | LLM Model |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`cpu-apple-silicon`** | **macOS Apple Silicon (M1–M5)** | **`5050:5000`** *(Avoids AirPlay)* | **`8081:80`** | `medium` / `int8` (8 CPU threads) | `llama3:8b` |
-| **`cpu`** | Generic x86_64 / ARM CPU | `5050:5000` | `8081:80` | `small` / `int8` | `llama3.2:1b` |
-| **`basic`** | NVIDIA GPU (entry/laptop) | `5000:5000` | `8081:80` | `small` / `float16` | `llama3:8b` |
-| **`medium`** | NVIDIA GPU (workstation) | `5000:5000` | `8081:80` | `medium` / `float16` | `llama3:8b` |
-| **`large`** | NVIDIA GPU (high VRAM) | `5000:5000` | `8081:80` | `medium` / `float16` (batch=8) | `llama3:8b` |
+| **`hybrid`** | **macOS Apple Silicon (Native + LM Studio)** | **`5050`** *(Native Mac CPU)* | **`8081:80`** | `medium` / `int8` (Native Mac M-cores) | **LM Studio Metal GPU** (`1234`) |
+| **`cpu-apple-silicon`** | **macOS Apple Silicon (M1–M5 in Docker)** | **`5050:5000`** *(Avoids AirPlay)* | **`8081:80`** | `medium` / `int8` (8 CPU threads) | `llama3:8b` (Ollama) |
+| **`cpu`** | Generic x86_64 / ARM CPU | `5050:5000` | `8081:80` | `small` / `int8` | `llama3.2:1b` (Ollama) |
+| **`basic`** | NVIDIA GPU (entry/laptop) | `5000:5000` | `8081:80` | `small` / `float16` | `llama3:8b` (Ollama) |
+| **`medium`** | NVIDIA GPU (workstation) | `5000:5000` | `8081:80` | `medium` / `float16` | `llama3:8b` (Ollama) |
+| **`large`** | NVIDIA GPU (high VRAM) | `5000:5000` | `8081:80` | `medium` / `float16` (batch=8) | `llama3:8b` (Ollama) |
 
-### Starting the Stack (Example for Mac Apple Silicon)
+### 2.1 Starting the Hybrid Profile (macOS Apple Silicon + LM Studio)
+The **Hybrid Profile** provides maximum Apple Silicon performance:
+1. **Frontend**: Runs in lightweight Docker Nginx container at `http://localhost:8081`.
+2. **Backend**: Runs natively in Python on macOS at `http://localhost:5050` with direct access to all physical CPU cores and Unified Memory bandwidth (no Docker virtualization penalty).
+3. **LLM Engine**: Offloads summarization to **LM Studio** at `http://localhost:1234/v1` running with Apple Metal GPU acceleration.
+
+To configure and launch in one command:
+```bash
+./run_hybrid_mac.sh
+```
+The script automatically:
+* Verifies `ffmpeg` and Python 3.11 via Homebrew (installs them if missing).
+* Creates `.venv` and installs dependencies from `requirements.txt`.
+* Probes LM Studio connectivity on port `1234`.
+* Stops any conflicting Docker backend containers to release port `5050`.
+* Spins up the frontend Docker container (`speech2brief-frontend-hybrid`) on port `8081`.
+* Launches `python app.py` on port `5050` bound to all physical CPU cores.
+
+### 2.2 Starting the Standard Docker Stack (Example: cpu-apple-silicon)
 ```bash
 # In repo root:
 docker compose --profile cpu-apple-silicon -f docker/docker-compose.yml up -d
@@ -57,6 +76,12 @@ Environment variables are loaded from `.env` in the project root:
 ```ini
 # Hugging Face Token (required for Pyannote speaker diarization)
 HF_TOKEN=hf_yourTokenHere
+
+# LLM Provider Configuration (Optional, defaults to "ollama" in Docker, "lmstudio" in hybrid script)
+LLM_PROVIDER=lmstudio
+LMSTUDIO_HOST=http://localhost:1234/v1
+LLAMA_MODEL=llama3:8b
+PORT=5050
 ```
 
 * **`HF_TOKEN`**: A Hugging Face access token that has accepted the user terms on HuggingFace Hub for:

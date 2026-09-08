@@ -22,6 +22,21 @@ from audio_extract import extract_audio
 
 print("--> Starting Speech2Brief Backend", flush=True)
 
+# Automatically load .env if present (useful for host/native execution without Docker)
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(env_path):
+    try:
+        with open(env_path, 'r', encoding='utf-8') as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith('#') and '=' in _line:
+                    _k, _v = _line.split('=', 1)
+                    _k, _v = _k.strip(), _v.strip().strip('"').strip("'")
+                    if _k not in os.environ:
+                        os.environ[_k] = _v
+    except Exception:
+        pass
+
 device = os.environ.get("DEVICE", "cuda")
 OMP_NUM_THREADS = int(os.environ.get("OMP_NUM_THREADS", 8 if device == "cpu" else 4))
 if device == "cpu":
@@ -38,17 +53,21 @@ os.makedirs(TRANSCRIPTIONS_DIR, exist_ok=True)
 
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", 2))
 WHISPERX_MODEL = str(os.environ.get("WHISPERX_MODEL", "medium"))
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://llama3:11434")
-LLAMA_MODEL = os.environ.get("LLAMA_MODEL", "llama3:8b")
 COMPUTE_TYPE = str(os.environ.get("COMPUTE_TYPE", "int8" if device == "cpu" else "float16"))
 HF_TOKEN = os.environ.get("HF_TOKEN")
+
+# LLM Provider Configuration (ollama or lmstudio)
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "ollama").lower()
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://llama3:11434")
+LMSTUDIO_HOST = os.environ.get("LMSTUDIO_HOST", "http://localhost:1234/v1")
+LLAMA_MODEL = os.environ.get("LLAMA_MODEL", "llama3:8b")
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 if device == "cpu":
-    model = whisperx.load_model(WHISPERX_MODEL, device="cpu", compute_type=COMPUTE_TYPE)
-    print(f"--> [INIT] WhisperX loaded on CPU (compute_type={COMPUTE_TYPE})", flush=True)
+    model = whisperx.load_model(WHISPERX_MODEL, device="cpu", compute_type=COMPUTE_TYPE, threads=OMP_NUM_THREADS)
+    print(f"--> [INIT] WhisperX loaded on CPU (compute_type={COMPUTE_TYPE}, threads={OMP_NUM_THREADS})", flush=True)
 else:
     model = whisperx.load_model(WHISPERX_MODEL, device, compute_type=COMPUTE_TYPE)
     print(f"--> [INIT] WhisperX loaded on GPU ({device}, compute_type={COMPUTE_TYPE})", flush=True)
@@ -77,13 +96,16 @@ def get_diarization_pipeline():
 def get_config():
     """Returns active profile and model configuration."""
     token = os.environ.get("HF_TOKEN") or HF_TOKEN
+    is_lmstudio = (LLM_PROVIDER == "lmstudio") or ("1234" in LMSTUDIO_HOST) or ("1234" in OLLAMA_HOST)
+    llm_display = f"LM Studio ({LLAMA_MODEL})" if is_lmstudio else LLAMA_MODEL
     return jsonify({
         "profile": PROFILE_NAME,
         "device": device,
         "whisperx_model": WHISPERX_MODEL,
         "compute_type": COMPUTE_TYPE,
         "batch_size": BATCH_SIZE,
-        "llama_model": LLAMA_MODEL,
+        "llama_model": llm_display,
+        "llm_provider": "lmstudio" if is_lmstudio else "ollama",
         "threads": OMP_NUM_THREADS,
         "diarization_available": bool(token)
     })
@@ -149,6 +171,40 @@ def summarize_with_llama3(prompt):
     except Exception as e:
         print(f"\n❌ [ERROR] Exception during Ollama request: {str(e)}\n", flush=True)
         raise RuntimeError(f"Error calling Ollama: {str(e)}")
+
+
+def summarize_with_lmstudio(prompt):
+    """Calls LM Studio / OpenAI-compatible endpoint."""
+    url = f"{LMSTUDIO_HOST.rstrip('/')}/chat/completions"
+    payload = {
+        "model": LLAMA_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a professional assistant that generates detailed, structured chronological summaries of meeting and audio transcripts."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "temperature": 0.3
+    }
+    try:
+        r = requests.post(url, json=payload, timeout=300)
+        r.raise_for_status()
+        data = r.json()
+        return data['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        print(f"\n❌ [ERROR] Exception during LM Studio request: {str(e)}\n", flush=True)
+        raise RuntimeError(f"Error calling LM Studio at {url}: {str(e)}")
+
+
+def summarize_text(prompt):
+    """Dispatches to the configured LLM provider (Ollama or LM Studio)."""
+    if LLM_PROVIDER == "lmstudio" or "1234" in LMSTUDIO_HOST or "1234" in OLLAMA_HOST:
+        return summarize_with_lmstudio(prompt)
+    return summarize_with_llama3(prompt)
 
 
 def sse_message(step, message, progress=0, data=None):
@@ -333,18 +389,21 @@ def summarize():
 
         print(f"👥 [SPEAKERS DETECTED] Found {len(speakers_set)} speaker(s): {sorted(list(speakers_set))}", flush=True)
 
-        # 5. Summarization with Llama 3
+        # 5. Summarization with LLM (Ollama or LM Studio)
+        is_lmstudio = (LLM_PROVIDER == "lmstudio") or ("1234" in LMSTUDIO_HOST) or ("1234" in OLLAMA_HOST)
+        llm_label = f"LM Studio ({LLAMA_MODEL})" if is_lmstudio else f"Ollama ({LLAMA_MODEL})"
+
         prompt = make_summary_prompt(segments_output)
-        print(f"🧠 [SUMMARIZING] Generating chronological summary with Ollama ({LLAMA_MODEL})...", flush=True)
+        print(f"🧠 [SUMMARIZING] Generating chronological summary with {llm_label}...", flush=True)
         if is_stream:
-            yield sse_message("summarizing", f"Generating chronological summary with Ollama ({LLAMA_MODEL})...", 90)
+            yield sse_message("summarizing", f"Generating chronological summary with {llm_label}...", 90)
 
         try:
             t_sum_start = time.time()
-            resumen = summarize_with_llama3(prompt)
+            resumen = summarize_text(prompt)
             print(f"✅ [SUMMARY GENERATED] Completed in {time.time() - t_sum_start:.2f}s", flush=True)
         except Exception as e:
-            print(f"❌ [ERROR] Ollama summarization failed: {str(e)}", flush=True)
+            print(f"❌ [ERROR] Summarization failed: {str(e)}", flush=True)
             if is_stream:
                 yield sse_message("error", f"Summarization failed: {str(e)}", 0)
             return
@@ -510,4 +569,5 @@ def health():
 
 if __name__ == "__main__":
     debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() in ("true", "1")
-    app.run(host="0.0.0.0", port=5000, debug=debug_mode)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)

@@ -69,6 +69,21 @@ services:
     ports:
       - "8081:80"
 
+  # Hybrid profile: frontend only (Backend & LM Studio run natively on Mac host)
+  frontend-hybrid:
+    container_name: speech2brief-frontend-hybrid
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_ENDPOINT=http://localhost:5050
+    image: speech2brief-frontend-hybrid:latest
+    profiles: ["hybrid"]
+    environment:
+      - VITE_API_ENDPOINT=http://localhost:5050
+    ports:
+      - "8081:80"
+
   llama3-cpu-apple-silicon:
     container_name: speech2brief-llama3-cpu-apple-silicon
     build:
@@ -78,6 +93,7 @@ services:
     profiles: ["cpu-apple-silicon"]
     environment:
       - LLAMA_MODEL=llama3:8b
+      - OLLAMA_NUM_THREADS=8
     ports:
       - "11434:11434"
     volumes:
