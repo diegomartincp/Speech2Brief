@@ -7,6 +7,7 @@ import { ResultsDisplay, ResultsData } from '@/components/ResultsDisplay';
 import { LoadingState } from '@/components/LoadingState';
 import { ConfigBanner, SystemConfig } from '@/components/ConfigBanner';
 import { ProcessingOptions, ProcessingOptionsState } from '@/components/ProcessingOptions';
+import { HistoryView } from '@/components/HistoryView';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Brain, 
@@ -17,7 +18,9 @@ import {
   Server, 
   Github, 
   ArrowRight,
-  Users
+  Users,
+  Mic,
+  FolderOpen
 } from 'lucide-react';
 import heroImage from '@/assets/hero-audio.jpg';
 
@@ -25,6 +28,7 @@ type AppState = 'idle' | 'processing' | 'results' | 'error';
 
 const Index = () => {
   const [state, setState] = useState<AppState>('idle');
+  const [activeTab, setActiveTab] = useState<'new' | 'history'>('new');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [results, setResults] = useState<ResultsData | null>(null);
   const [error, setError] = useState<string>('');
@@ -277,43 +281,108 @@ const Index = () => {
           {/* Active Profile & Models Configuration Banner */}
           <ConfigBanner config={systemConfig} />
 
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">
-              Process Audio & Video
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Upload any audio or video file to generate transcripts with optional speaker diarization and AI summaries
-            </p>
+          {/* Navigation Tabs (New vs History) */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="inline-flex p-1 rounded-xl bg-muted/60 border border-border/60 shadow-inner">
+              <button
+                type="button"
+                onClick={() => { setActiveTab('new'); if (state === 'results') setState('idle'); }}
+                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'new' && state !== 'results'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Mic className="w-4 h-4" />
+                <span>New Transcription</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('history'); if (state === 'results') setState('idle'); }}
+                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'history' && state !== 'results'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <FolderOpen className="w-4 h-4" />
+                <span>Past Transcriptions</span>
+              </button>
+            </div>
           </div>
 
-          {state === 'idle' && (
-            <>
-              <ProcessingOptions
-                options={options}
-                onChange={setOptions}
-              />
-              <AudioUpload onFileSelect={handleFileSelect} />
-            </>
-          )}
-
-          {state === 'processing' && (
-            <LoadingState 
-              fileName={selectedFile?.name} 
-              currentStep={currentStep}
-              stepMessage={stepMessage}
-              progress={progress}
-              diarizationEnabled={options.enableDiarization}
+          {activeTab === 'history' && state !== 'results' && (
+            <HistoryView
+              apiEndpoint={API_ENDPOINT}
+              onOpenTranscription={(data) => {
+                setResults(data);
+                setState('results');
+              }}
+              onBackToNew={() => {
+                setActiveTab('new');
+                setState('idle');
+              }}
             />
           )}
 
+          {activeTab === 'new' && (
+            <>
+              {state === 'idle' && (
+                <>
+                  <div className="text-center mb-8">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-3">
+                      Process Audio & Video
+                    </h2>
+                    <p className="text-lg text-muted-foreground">
+                      Upload any audio or video file to generate transcripts with optional speaker diarization and AI summaries
+                    </p>
+                  </div>
+
+                  <ProcessingOptions
+                    options={options}
+                    onChange={setOptions}
+                  />
+                  <AudioUpload onFileSelect={handleFileSelect} />
+                </>
+              )}
+
+              {state === 'processing' && (
+                <LoadingState 
+                  fileName={selectedFile?.name} 
+                  currentStep={currentStep}
+                  stepMessage={stepMessage}
+                  progress={progress}
+                  diarizationEnabled={options.enableDiarization}
+                />
+              )}
+            </>
+          )}
+
           {state === 'results' && results && (
-            <div className="space-y-8">
-              <div className="text-center">
-                <Button onClick={resetApp} variant="outline" size="lg">
-                  Process Another File
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/50">
+                <Button 
+                  onClick={() => { setActiveTab('history'); setState('idle'); }} 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  ← Back to Past Transcriptions
+                </Button>
+
+                <Button 
+                  onClick={resetApp} 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs"
+                >
+                  + Process Another File
                 </Button>
               </div>
-              <ResultsDisplay results={results} />
+
+              <ResultsDisplay results={results} apiEndpoint={API_ENDPOINT} />
             </div>
           )}
 

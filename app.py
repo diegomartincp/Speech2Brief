@@ -33,6 +33,9 @@ PROFILE_NAME = os.environ.get("PROFILE_NAME", "cpu-apple-silicon" if device == "
 TEMP_FOLDER = os.path.join(os.path.dirname(__file__), 'temp')
 os.makedirs(TEMP_FOLDER, exist_ok=True)
 
+TRANSCRIPTIONS_DIR = os.path.join(os.path.dirname(__file__), 'transcriptions')
+os.makedirs(TRANSCRIPTIONS_DIR, exist_ok=True)
+
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", 2))
 WHISPERX_MODEL = str(os.environ.get("WHISPERX_MODEL", "medium"))
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://llama3:11434")
@@ -347,10 +350,22 @@ def summarize():
             return
 
         total_time = time.time() - request_start
+        transcription_id = f"{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
+        created_at = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+
+        # Build initial speaker map (SPEAKER_00 -> Speaker 1)
+        speaker_map = {}
+        for spk in sorted(list(speakers_set)):
+            speaker_map[spk] = format_speaker_name(spk)
+
         final_response = {
+            "id": transcription_id,
+            "created_at": created_at,
+            "filename": original_name,
             "resumen": resumen,
             "transcription": segments_output,
             "speakers": sorted(list(speakers_set)),
+            "speaker_map": speaker_map,
             "detected_language": detected_lang,
             "processing_time_seconds": round(total_time, 2),
             "config": {
@@ -362,6 +377,15 @@ def summarize():
                 "speakers_detected": len(speakers_set)
             }
         }
+
+        # Save result locally to persistent JSON storage
+        json_path = os.path.join(TRANSCRIPTIONS_DIR, f"{transcription_id}.json")
+        try:
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(final_response, f, ensure_ascii=False, indent=2)
+            print(f"💾 [SAVED] Transcription saved to '{json_path}'", flush=True)
+        except Exception as e:
+            print(f"⚠️ [WARN] Could not save transcription JSON: {str(e)}", flush=True)
 
         print("\n📍 Summary Generated:")
         print(resumen, flush=True)
@@ -384,6 +408,99 @@ def summarize():
         if result_data:
             return jsonify(result_data)
         return jsonify({"error": "Processing failed"}), 500
+
+
+@app.route('/transcriptions', methods=['GET'])
+def list_transcriptions():
+    """List all saved transcriptions metadata sorted newest first."""
+    items = []
+    if os.path.exists(TRANSCRIPTIONS_DIR):
+        for fname in os.listdir(TRANSCRIPTIONS_DIR):
+            if fname.endswith('.json'):
+                fpath = os.path.join(TRANSCRIPTIONS_DIR, fname)
+                try:
+                    with open(fpath, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    tid = data.get("id", os.path.splitext(fname)[0])
+                    res_text = data.get("resumen", "")
+                    snippet = (res_text[:180] + "...") if len(res_text) > 180 else res_text
+                    items.append({
+                        "id": tid,
+                        "created_at": data.get("created_at", ""),
+                        "filename": data.get("filename", "audio"),
+                        "detected_language": data.get("detected_language", "en"),
+                        "processing_time_seconds": data.get("processing_time_seconds", 0),
+                        "speakers_count": len(data.get("speakers", [])),
+                        "speaker_map": data.get("speaker_map", {}),
+                        "diarization_enabled": data.get("config", {}).get("diarization_enabled", len(data.get("speakers", [])) > 0),
+                        "summary_snippet": snippet,
+                        "segments_count": len(data.get("transcription", []))
+                    })
+                except Exception as e:
+                    print(f"⚠️ [WARN] Error reading {fpath}: {str(e)}", flush=True)
+    
+    items.sort(key=lambda x: x.get("created_at") or x.get("id"), reverse=True)
+    return jsonify(items)
+
+
+@app.route('/transcriptions/<transcription_id>', methods=['GET'])
+def get_transcription(transcription_id):
+    """Get full transcription data by ID."""
+    safe_id = os.path.basename(transcription_id)
+    fpath = os.path.join(TRANSCRIPTIONS_DIR, f"{safe_id}.json")
+    if not os.path.exists(fpath):
+        return jsonify({"error": "Transcription not found"}), 404
+    try:
+        with open(fpath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/transcriptions/<transcription_id>/speakers', methods=['PATCH'])
+def update_speakers(transcription_id):
+    """Update speaker names mapping for a transcription."""
+    safe_id = os.path.basename(transcription_id)
+    fpath = os.path.join(TRANSCRIPTIONS_DIR, f"{safe_id}.json")
+    if not os.path.exists(fpath):
+        return jsonify({"error": "Transcription not found"}), 404
+    
+    req_data = request.get_json(silent=True) or {}
+    new_speaker_map = req_data.get("speaker_map", {})
+    if not isinstance(new_speaker_map, dict):
+        return jsonify({"error": "speaker_map must be a dictionary"}), 400
+
+    try:
+        with open(fpath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        existing_map = data.get("speaker_map", {})
+        existing_map.update(new_speaker_map)
+        data["speaker_map"] = existing_map
+
+        with open(fpath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+        print(f"👥 [SPEAKERS UPDATED] Updated speaker names for '{safe_id}': {new_speaker_map}", flush=True)
+        return jsonify({"success": True, "speaker_map": existing_map, "id": safe_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/transcriptions/<transcription_id>', methods=['DELETE'])
+def delete_transcription(transcription_id):
+    """Delete a transcription by ID."""
+    safe_id = os.path.basename(transcription_id)
+    fpath = os.path.join(TRANSCRIPTIONS_DIR, f"{safe_id}.json")
+    if os.path.exists(fpath):
+        try:
+            os.remove(fpath)
+            print(f"🗑️ [DELETED] Deleted transcription '{safe_id}'", flush=True)
+            return jsonify({"success": True, "id": safe_id})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    return jsonify({"error": "Transcription not found"}), 404
 
 
 @app.route('/health', methods=['GET'])

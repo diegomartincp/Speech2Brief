@@ -49,6 +49,8 @@ services:
       - PROFILE_NAME=cpu
     depends_on:
       - llama3-cpu
+    volumes:
+      - ../transcriptions:/workspace/transcriptions
     ports:
       - "5050:5000"
 
@@ -101,6 +103,8 @@ services:
       - PROFILE_NAME=cpu-apple-silicon
     depends_on:
       - llama3-cpu-apple-silicon
+    volumes:
+      - ../transcriptions:/workspace/transcriptions
     ports:
       - "5050:5000"
 
@@ -154,6 +158,8 @@ services:
       - PROFILE_NAME=basic
     depends_on:
       - llama3-basic
+    volumes:
+      - ../transcriptions:/workspace/transcriptions
     ports:
       - "5000:5000"
     deploy:
@@ -215,6 +221,8 @@ services:
       - PROFILE_NAME=medium
     depends_on:
       - llama3-medium
+    volumes:
+      - ../transcriptions:/workspace/transcriptions
     ports:
       - "5000:5000"
     deploy:
@@ -276,6 +284,8 @@ services:
       - PROFILE_NAME=large
     depends_on:
       - llama3-large
+    volumes:
+      - ../transcriptions:/workspace/transcriptions
     ports:
       - "5000:5000"
     deploy:

@@ -2,3 +2,4 @@ venv
 temp
 check-cuda.py
 .env
+transcriptions/*.json

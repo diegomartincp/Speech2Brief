@@ -1,9 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, FileText, MessageSquare, Copy, Check, Users, Globe } from 'lucide-react';
+import { 
+  Clock, 
+  FileText, 
+  MessageSquare, 
+  Copy, 
+  Check, 
+  Users, 
+  Globe, 
+  FileDown, 
+  UserCheck, 
+  Edit3
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { SpeakerRenameModal } from './SpeakerRenameModal';
+import { ExportMarkdownModal } from './ExportMarkdownModal';
 
 export interface TranscriptionSegment {
   start: number;
@@ -13,15 +26,21 @@ export interface TranscriptionSegment {
 }
 
 export interface ResultsData {
+  id?: string;
+  created_at?: string;
+  filename?: string;
   processing_time_seconds: number;
   resumen: string;
   transcription: TranscriptionSegment[];
   speakers?: string[];
+  speaker_map?: { [key: string]: string };
   detected_language?: string;
+  config?: any;
 }
 
 interface ResultsDisplayProps {
   results: ResultsData;
+  apiEndpoint?: string;
 }
 
 export const formatSpeakerName = (speakerId?: string): string => {
@@ -83,10 +102,23 @@ export const getSpeakerColor = (speakerId?: string): { badge: string; border: st
   return colorPalette[index];
 };
 
-export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
+export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, apiEndpoint }) => {
   const [copiedTranscription, setCopiedTranscription] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+  const [speakerMap, setSpeakerMap] = useState<{ [key: string]: string }>(results.speaker_map || {});
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isSavingSpeakers, setIsSavingSpeakers] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setSpeakerMap(results.speaker_map || {});
+  }, [results]);
+
+  const getEffectiveSpeakerName = (speakerId?: string): string => {
+    if (!speakerId) return '';
+    return speakerMap[speakerId] || formatSpeakerName(speakerId);
+  };
 
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -107,7 +139,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     const formatted = results.transcription
       .map(seg => {
         const time = `[${formatTime(seg.start)} - ${formatTime(seg.end)}]`;
-        const spk = seg.speaker ? ` ${formatSpeakerName(seg.speaker)}:` : '';
+        const name = getEffectiveSpeakerName(seg.speaker);
+        const spk = name ? ` ${name}:` : '';
         return `${time}${spk} ${seg.text}`;
       })
       .join('\n\n');
@@ -147,6 +180,37 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     }
   };
 
+  const handleSaveSpeakerMap = async (newMap: { [key: string]: string }) => {
+    setSpeakerMap(newMap);
+    if (results.id && apiEndpoint) {
+      setIsSavingSpeakers(true);
+      try {
+        const res = await fetch(`${apiEndpoint}/transcriptions/${results.id}/speakers`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ speaker_map: newMap })
+        });
+        if (res.ok) {
+          toast({
+            title: "Speaker names saved!",
+            description: "Updated permanently in local storage.",
+          });
+        }
+      } catch (e) {
+        console.warn('Could not persist speaker names:', e);
+      } finally {
+        setIsSavingSpeakers(false);
+      }
+    } else {
+      toast({
+        title: "Speaker names updated",
+        description: "Names updated for current view and export.",
+      });
+    }
+  };
+
+  const hasSpeakers = results.speakers && results.speakers.length > 0;
+
   return (
     <div className="space-y-6">
       {/* Overview Stats Card */}
@@ -158,8 +222,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase font-semibold">Processing Time</p>
-              <p className="text-xl font-bold text-foreground">
+              <p className="text-xs text-muted-foreground font-medium">Processing Duration</p>
+              <p className="text-xl font-bold font-mono tracking-tight text-foreground">
                 {formatDuration(results.processing_time_seconds)}
               </p>
             </div>
@@ -169,32 +233,81 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         {/* Language */}
         <Card>
           <CardContent className="p-5 flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500/15 text-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
               <Globe className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase font-semibold">Detected Language</p>
-              <p className="text-xl font-bold text-foreground">
-                {(results.detected_language || 'Auto').toUpperCase()}
+              <p className="text-xs text-muted-foreground font-medium">Detected Language</p>
+              <p className="text-xl font-bold uppercase tracking-tight text-foreground">
+                {results.detected_language || 'Auto'}
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Speakers */}
+        {/* Speaker Count & Rename Action */}
         <Card>
-          <CardContent className="p-5 flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-500/15 text-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <Users className="w-5 h-5" />
+          <CardContent className="p-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Identified Speakers</p>
+                <p className="text-xl font-bold tracking-tight text-foreground">
+                  {hasSpeakers ? `${results.speakers!.length}` : '1 (Single)'}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase font-semibold">Speakers Identified</p>
-              <p className="text-xl font-bold text-foreground">
-                {results.speakers && results.speakers.length > 0 ? results.speakers.length : '1+'}
-              </p>
-            </div>
+
+            {hasSpeakers && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsRenameOpen(true)}
+                className="h-8 text-xs flex items-center gap-1.5"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                Rename
+              </Button>
+            )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Action Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-card/60 backdrop-blur-sm shadow-sm">
+        <div className="flex items-center gap-2">
+          {results.filename && (
+            <span className="text-xs font-mono text-muted-foreground truncate max-w-xs sm:max-w-md">
+              File: <strong className="text-foreground">{results.filename}</strong>
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {hasSpeakers && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsRenameOpen(true)}
+              className="h-8 text-xs flex items-center gap-1.5"
+            >
+              <Users className="w-3.5 h-3.5" />
+              Rename Speakers
+            </Button>
+          )}
+
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setIsExportOpen(true)}
+            className="h-8 text-xs flex items-center gap-1.5"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            Export Markdown
+          </Button>
+        </div>
       </div>
 
       {/* Chronological Summary Card */}
@@ -202,7 +315,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <FileText className="w-5 h-5 text-primary" />
-            Chronological Summary
+            Executive Summary
           </CardTitle>
           <Button
             variant="outline"
@@ -237,57 +350,75 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-primary" />
-            <CardTitle className="text-lg">Transcription</CardTitle>
+            <CardTitle className="text-lg">Full Transcription</CardTitle>
             <Badge variant="secondary" className="ml-2 font-mono text-xs">
               {results.transcription.length} segments
             </Badge>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopyTranscription}
-            className="flex items-center gap-1.5 h-8 text-xs font-medium"
-          >
-            {copiedTranscription ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-emerald-500 font-medium">Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>Copy Transcription</span>
-              </>
-            )}
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyTranscription}
+              className="flex items-center gap-1.5 h-8 text-xs font-medium"
+            >
+              {copiedTranscription ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-emerald-500 font-medium">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>Copy Transcription</span>
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
 
         {/* Detected Speaker Badges Palette */}
-        {results.speakers && results.speakers.length > 0 && (
-          <div className="px-6 pb-4 flex flex-wrap items-center gap-2 border-b border-border/40">
-            <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" /> Speakers:
-            </span>
-            {results.speakers.map((spk) => {
-              const color = getSpeakerColor(spk);
-              return (
-                <Badge 
-                  key={spk} 
-                  variant="outline" 
-                  className={`text-xs py-0.5 px-2.5 font-medium border ${color.badge}`}
-                >
-                  {formatSpeakerName(spk)}
-                </Badge>
-              );
-            })}
+        {hasSpeakers && (
+          <div className="px-6 pb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/40">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                <Users className="w-3.5 h-3.5" /> Speakers:
+              </span>
+              {results.speakers!.map((spk) => {
+                const color = getSpeakerColor(spk);
+                const displayName = getEffectiveSpeakerName(spk);
+                return (
+                  <Badge 
+                    key={spk} 
+                    variant="outline" 
+                    className={`text-xs py-0.5 px-2.5 font-medium border cursor-pointer hover:opacity-80 transition-opacity ${color.badge}`}
+                    onClick={() => setIsRenameOpen(true)}
+                    title={`Click to rename ${displayName}`}
+                  >
+                    {displayName}
+                  </Badge>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsRenameOpen(true)}
+              className="h-7 text-xs text-primary hover:text-primary flex items-center gap-1"
+            >
+              <Edit3 className="w-3 h-3" />
+              Edit Names
+            </Button>
           </div>
         )}
 
         <CardContent className="pt-4">
-          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
             {results.transcription.map((segment, index) => {
               const color = getSpeakerColor(segment.speaker);
-              const speakerLabel = formatSpeakerName(segment.speaker);
+              const speakerLabel = getEffectiveSpeakerName(segment.speaker);
 
               return (
                 <div 
@@ -299,7 +430,9 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       {speakerLabel && (
                         <Badge 
                           variant="outline" 
-                          className={`text-xs font-semibold py-0 px-2 ${color.badge}`}
+                          className={`text-xs font-semibold py-0 px-2 cursor-pointer hover:opacity-80 ${color.badge}`}
+                          onClick={() => setIsRenameOpen(true)}
+                          title="Click to rename speaker"
                         >
                           {speakerLabel}
                         </Badge>
@@ -318,6 +451,25 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      {hasSpeakers && (
+        <SpeakerRenameModal
+          isOpen={isRenameOpen}
+          onClose={() => setIsRenameOpen(false)}
+          speakers={results.speakers!}
+          currentSpeakerMap={speakerMap}
+          onSave={handleSaveSpeakerMap}
+          isSaving={isSavingSpeakers}
+        />
+      )}
+
+      <ExportMarkdownModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        results={results}
+        speakerMap={speakerMap}
+      />
     </div>
   );
 };
