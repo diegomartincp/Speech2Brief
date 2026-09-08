@@ -181,10 +181,11 @@ def make_summary_prompt(segments):
     return prompt
 
 
-def summarize_with_llama3(prompt, model=None):
+def summarize_with_llama3(prompt, model=None, host=None):
     """Calls Ollama endpoint and returns the response as a string."""
     target_model = model or LLAMA_MODEL
-    url = f"{OLLAMA_HOST}/api/generate"
+    target_host = host or OLLAMA_HOST
+    url = f"{target_host}/api/generate"
     payload = {
         "model": target_model,
         "prompt": prompt,
@@ -197,7 +198,7 @@ def summarize_with_llama3(prompt, model=None):
         return data['response'].strip()
     except Exception as e:
         print(f"\n❌ [ERROR] Exception during Ollama request: {str(e)}\n", flush=True)
-        raise RuntimeError(f"Error calling Ollama with model '{target_model}': {str(e)}")
+        raise RuntimeError(f"Error calling Ollama with model '{target_model}' at {url}: {str(e)}")
 
 
 def summarize_with_lmstudio(prompt, model=None):
@@ -237,17 +238,12 @@ def summarize_text(prompt, model=None):
         except Exception as lm_err:
             print(f"⚠️ [NOTICE] LM Studio failed for model '{target_model}' ({lm_err}). Checking Ollama fallback...", flush=True)
             # Try fallback to Ollama on host or container port 11434
-            for host in ["http://localhost:11434", "http://127.0.0.1:11434", OLLAMA_HOST]:
+            for host_candidate in ["http://localhost:11434", "http://127.0.0.1:11434", OLLAMA_HOST]:
                 try:
-                    check_r = requests.get(f"{host}/api/tags", timeout=2)
+                    check_r = requests.get(f"{host_candidate}/api/tags", timeout=2)
                     if check_r.status_code == 200:
-                        print(f"🔄 [FALLBACK] Using local Ollama at {host} with model '{LLAMA_MODEL}'...", flush=True)
-                        global OLLAMA_HOST
-                        orig_host = OLLAMA_HOST
-                        OLLAMA_HOST = host
-                        res = summarize_with_llama3(prompt, model=LLAMA_MODEL)
-                        OLLAMA_HOST = orig_host
-                        return res
+                        print(f"🔄 [FALLBACK] Using local Ollama at {host_candidate} with model '{LLAMA_MODEL}'...", flush=True)
+                        return summarize_with_llama3(prompt, model=LLAMA_MODEL, host=host_candidate)
                 except Exception:
                     continue
             raise RuntimeError(
