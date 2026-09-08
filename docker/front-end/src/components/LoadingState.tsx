@@ -36,7 +36,7 @@ const PIPELINE_STEPS: StepItem[] = [
   { id: 'transcribing', label: 'Transcription (WhisperX)', icon: Mic },
   { id: 'aligning', label: 'Phoneme Alignment', icon: AlignLeft },
   { id: 'diarizing', label: 'Speaker Identification', icon: Users },
-  { id: 'summarizing', label: 'Chronological Summary (Llama 3)', icon: Brain },
+  { id: 'summarizing', label: 'Chronological Summary', icon: Brain },
 ];
 
 const formatDuration = (sec: number): string => {

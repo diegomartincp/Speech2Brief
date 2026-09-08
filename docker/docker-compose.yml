@@ -43,6 +43,7 @@ services:
       - WHISPERX_MODEL=small
       - OLLAMA_HOST=http://speech2brief-llama3-cpu:11434
       - DEVICE=cpu
+      - LLM_PROVIDER=ollama
       - LLAMA_MODEL=llama3.2:1b
       - HF_TOKEN=${HF_TOKEN:-}
       - PYTHONUNBUFFERED=1
@@ -113,6 +114,7 @@ services:
       - OMP_NUM_THREADS=8
       - OLLAMA_HOST=http://speech2brief-llama3-cpu-apple-silicon:11434
       - DEVICE=cpu
+      - LLM_PROVIDER=ollama
       - LLAMA_MODEL=llama3:8b
       - HF_TOKEN=${HF_TOKEN:-}
       - PYTHONUNBUFFERED=1
@@ -121,6 +123,7 @@ services:
       - llama3-cpu-apple-silicon
     volumes:
       - ../transcriptions:/workspace/transcriptions
+      - ~/.cache/huggingface:/root/.cache/huggingface
     ports:
       - "5050:5000"
 

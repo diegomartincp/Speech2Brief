@@ -110,7 +110,7 @@ def get_available_lmstudio_models():
 def get_config():
     """Returns active profile and model configuration."""
     token = os.environ.get("HF_TOKEN") or HF_TOKEN
-    is_lmstudio = (LLM_PROVIDER == "lmstudio") or ("1234" in LMSTUDIO_HOST) or ("1234" in OLLAMA_HOST)
+    is_lmstudio = (LLM_PROVIDER == "lmstudio")
     
     available_models = []
     if is_lmstudio:
@@ -232,7 +232,7 @@ def summarize_with_lmstudio(prompt, model=None):
 def summarize_text(prompt, model=None):
     """Dispatches to the configured LLM provider using the selected model, with automatic fallback."""
     target_model = model or os.environ.get("LMSTUDIO_MODEL") or LLAMA_MODEL
-    if LLM_PROVIDER == "lmstudio" or "1234" in LMSTUDIO_HOST or "1234" in OLLAMA_HOST:
+    if LLM_PROVIDER == "lmstudio":
         try:
             return summarize_with_lmstudio(prompt, model=target_model)
         except Exception as lm_err:
@@ -292,7 +292,7 @@ def summarize():
         max_speakers = None
 
     requested_model = request.form.get("model", "").strip() or None
-    is_lmstudio = (LLM_PROVIDER == "lmstudio") or ("1234" in LMSTUDIO_HOST) or ("1234" in OLLAMA_HOST)
+    is_lmstudio = (LLM_PROVIDER == "lmstudio")
     selected_llm_model = requested_model or (os.environ.get("LMSTUDIO_MODEL") if is_lmstudio else None) or LLAMA_MODEL
 
     original_name = file.filename or "upload"
