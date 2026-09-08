@@ -1,3 +1,5 @@
+name: speech2brief
+
 services:
 
   # CPU profile
@@ -6,10 +8,12 @@ services:
     build:
       context: ./front-end
       dockerfile: Dockerfile
+      args:
+        - VITE_API_ENDPOINT=http://localhost:5050
     image: speech2brief-frontend-cpu:latest
     profiles: ["cpu"]
     environment:
-      - VITE_API_URL=http://speech2brief-resumer-cpu:5000
+      - VITE_API_ENDPOINT=http://localhost:5050
     ports:
       - "8081:80"
 
@@ -40,10 +44,65 @@ services:
       - OLLAMA_HOST=http://speech2brief-llama3-cpu:11434
       - DEVICE=cpu
       - LLAMA_MODEL=llama3.2:1b
+      - HF_TOKEN=${HF_TOKEN:-}
+      - PYTHONUNBUFFERED=1
+      - PROFILE_NAME=cpu
     depends_on:
       - llama3-cpu
     ports:
-      - "5000:5000"
+      - "5050:5000"
+
+  # CPU Apple Silicon profile (Optimized for Mac M-Series)
+  frontend-cpu-apple-silicon:
+    container_name: speech2brief-frontend-cpu-apple-silicon
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_ENDPOINT=http://localhost:5050
+    image: speech2brief-frontend-cpu-apple-silicon:latest
+    profiles: ["cpu-apple-silicon"]
+    environment:
+      - VITE_API_ENDPOINT=http://localhost:5050
+    ports:
+      - "8081:80"
+
+  llama3-cpu-apple-silicon:
+    container_name: speech2brief-llama3-cpu-apple-silicon
+    build:
+      context: ./llama3
+      dockerfile: Dockerfile
+    image: speech2brief-llama3-cpu-apple-silicon:latest
+    profiles: ["cpu-apple-silicon"]
+    environment:
+      - LLAMA_MODEL=llama3:8b
+    ports:
+      - "11434:11434"
+    volumes:
+      - llama3_cpu_high_precision:/root/.ollama
+
+  resumer-cpu-apple-silicon:
+    container_name: speech2brief-resumer-cpu-apple-silicon
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cpu
+    image: speech2brief-resumer-cpu-apple-silicon:latest
+    profiles: ["cpu-apple-silicon"]
+    environment:
+      - BATCH_SIZE=4
+      - WHISPERX_MODEL=medium
+      - COMPUTE_TYPE=int8
+      - OMP_NUM_THREADS=8
+      - OLLAMA_HOST=http://speech2brief-llama3-cpu-apple-silicon:11434
+      - DEVICE=cpu
+      - LLAMA_MODEL=llama3:8b
+      - HF_TOKEN=${HF_TOKEN:-}
+      - PYTHONUNBUFFERED=1
+      - PROFILE_NAME=cpu-apple-silicon
+    depends_on:
+      - llama3-cpu-apple-silicon
+    ports:
+      - "5050:5000"
 
   # Basic profile
   frontend-basic:
@@ -90,6 +149,9 @@ services:
       - BATCH_SIZE=2
       - WHISPERX_MODEL=small
       - OLLAMA_HOST=http://speech2brief-llama3-basic:11434
+      - HF_TOKEN=${HF_TOKEN:-}
+      - PYTHONUNBUFFERED=1
+      - PROFILE_NAME=basic
     depends_on:
       - llama3-basic
     ports:
@@ -148,6 +210,9 @@ services:
       - WHISPERX_MODEL=medium
       - OLLAMA_HOST=http://speech2brief-llama3-medium:11434
       - LLAMA_MODEL=llama3:8b
+      - HF_TOKEN=${HF_TOKEN:-}
+      - PYTHONUNBUFFERED=1
+      - PROFILE_NAME=medium
     depends_on:
       - llama3-medium
     ports:
@@ -206,6 +271,9 @@ services:
       - WHISPERX_MODEL=medium
       - OLLAMA_HOST=http://speech2brief-llama3-large:11434
       - LLAMA_MODEL=llama3:8b
+      - HF_TOKEN=${HF_TOKEN:-}
+      - PYTHONUNBUFFERED=1
+      - PROFILE_NAME=large
     depends_on:
       - llama3-large
     ports:
@@ -223,3 +291,4 @@ volumes:
   llama3_medium:
   llama3_large:
   llama3_cpu:
+  llama3_cpu_high_precision:

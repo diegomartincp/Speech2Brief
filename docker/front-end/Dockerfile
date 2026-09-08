@@ -13,6 +13,10 @@ RUN npm install
 # Copy the rest of the source code
 COPY . .
 
+# Support configuring the API endpoint at build time
+ARG VITE_API_ENDPOINT=http://localhost:5000
+ENV VITE_API_ENDPOINT=$VITE_API_ENDPOINT
+
 # Build the React app for production
 RUN npm run build
 
