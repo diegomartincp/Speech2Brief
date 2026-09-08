@@ -1,181 +1,173 @@
 # Speech2Brief - Transcriber & Chronological Summarizer
 
-I'm excited to announce Speech2Brief v1.0.0, the first stable release of our automatic meeting/audio summarization API & bot!
-Turn any audio or video, from business meetings to WhatsApp voice notes—into clear, chronological summaries, all with your own hardware and total privacy.
+Turn any audio or video recording—from team meetings and conferences to WhatsApp voice notes—into accurate, speaker-identified transcripts and structured chronological summaries, running **100% locally on your own machine**.
 
-Speech2Brief is a powerful, self-hosted and efficient HTTP API for automatically converting speech into structured, chronological meeting notes. It combines the speed of [WhisperX](https://github.com/m-bain/whisperx) neural ASR (automatic speech recognition) system optimized for fast and accurate transcription—with the summarization capabilities of large language models (LLMs) served locally using [Ollama](https://ollama.com).
+Speech2Brief combines the high-speed neural speech recognition and phoneme alignment of [WhisperX](https://github.com/m-bain/whisperx) with speaker diarization via [PyAnnote](https://github.com/pyannote/pyannote-audio) and local LLM summarization powered by [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com).
 
-![Speech2Brief frontend](/utils/frontend.png "Frontend")
+![Speech2Brief frontend](/utils/frontend.png "Speech2Brief UI")
 
 ---
 
-## 🧠 Built on advanced AI models
-
-- ✅ **WhisperX** (based on OpenAI's Whisper neural model) delivers fast speech recognition with time alignment and multilingual capabilities.
-- ✅ **Llama 3** (via Ollama) generates context-aware, concise summaries from transcripts, leveraging state-of-the-art LLMs running locally.
-
 ## 💡 Key Features
 
-- 100% Local Processing: All transcription and summarization runs on your own hardware. No data ever leaves your machine.
-- High-speed transcription & summarization: Processes audio in seconds
-- Chronological structure: Captures discussion flow, agreements, and major decisions
-- Telegram Bot Integration: Interact with Speech2Brief from any device—send a voice message or audio file to the Telegram bot and receive back a structured summary instantly.
-- Multi-Language: Accurately transcribes and summarizes input in the original language of the audio, supporting meetings, interviews, and personal voice notes.
-- Broad Audio Support: Works with standard audio file formats such as .mp3, .wav, .ogg, .opus, as well as voice messages from apps like WhatsApp and Telegram. (Yes, also works with Whatsapp audio message files)
-- Docker & Local Installation: Flexible deployment options—choose between quick Docker Compose profiles (for GPU or CPU) or native installation.
+* 🔒 **100% Local & Private**: All audio processing, transcription, and LLM inference run strictly on your machine. No cloud APIs, no external telemetry.
+* ⚡ **High-Speed Execution**: Powered by CTranslate2 int8 quantization and optional Apple Metal GPU or NVIDIA CUDA acceleration.
+* 👥 **Speaker Identification (Diarization)**: Automatically distinguishes between different speakers (e.g. `SPEAKER_00`, `SPEAKER_01`) and allows you to rename them interactively.
+* 📝 **Chronological Summaries**: Generates structured, time-anchored meeting notes highlighting key discussion points, decisions, and action items.
+* 🎬 **Audio & Video Support**: Accepts `.mp3`, `.wav`, `.m4a`, `.mp4`, `.mov`, `.mkv`, `.ogg`, `.opus`, and WhatsApp voice notes.
+* 🌐 **Modern Web Interface**: Built with React 18, Vite, Tailwind CSS, and shadcn/ui with live Server-Sent Events (SSE) progress tracking and persistent history.
 
-## 🛠️ What is Included
+---
 
-- Full HTTP API for fast speech-to-summary processing
-- Accurate, segmented transcriptions via WhisperX (supports CPU and GPU, multi-language)
-- Chronological, clean summaries powered by locally run Llama 3 models (Ollama backend)
-- Supports any audio source: meetings, interviews, or personal voice notes (e.g., WhatsApp audios)
-- Multiple deployment profiles: cpu, basic, medium, large—optimizing for any machine
-- 100% local inference: your data never leaves your environment
-- Easy integration with Telegram bot (optional microservice)
+## 🎯 How to Use Speech2Brief
 
-## 🤔 Why Speech2Brief?
+### 1. Open the Web Application
+Once launched (see deployment options below), navigate to:
+👉 **`http://localhost:8081`**
 
-- ⚡ **High speed:** Full transcription and summarization happen in seconds, thanks to optimized GPU or CPU execution.
-- 💬 **Chronological structure:** Summaries retain the order of discussion, decisions, and speaker intent.
-- 🔒 **100% local:** No external APIs. All inference runs inside your environment—with your hardware, your data.
-- 🔧 **Flexible deployment:** Easily switch between CPU-only, GPU, and high-resource modes with Docker profiles.
+### 2. Upload Your Audio or Video
+Drag and drop your file into the upload zone or click to select from your file manager.
 
-## ⚡ Requirements for GPU usage
+### 3. Configure Processing Options
+* **Fast Mode (Disable Diarization)**: Transcribes the entire file ~5x faster. Ideal when speaker identification is not needed or for single-speaker audio.
+* **Speaker Diarization**: When enabled, PyAnnote segments audio by speaker. You can set minimum and maximum expected speakers to improve clustering accuracy.
+* **Custom LLM Model & Prompt**: Select or type your preferred summarization model and customize the summary prompt to fit your needs (e.g. bullet points, executive brief, meeting minutes).
 
-- **NVIDIA GPU** with the required VRAM for your chosen profile
-- Latest **NVIDIA drivers** installed on the host system
+### 4. Live Progress Tracking
+Follow real-time progress as the pipeline executes:
+`Uploaded` ➔ `Audio Extraction` (for video) ➔ `WhisperX Transcription` ➔ `Phoneme Alignment` ➔ `Speaker Diarization` ➔ `LLM Chronological Summarization`.
 
-## ⚙️ Local installation with Docker
+### 5. Review, Edit & Export
+* **Rename Speakers**: Click on any speaker badge to assign real names (e.g. `Alice`, `Bob`). Changes instantly propagate across the transcript and save to disk.
+* **Search & Copy**: Search keywords in the transcript or copy the generated summary with one click.
+* **History**: Access the sidebar drawer to revisit or delete past transcription sessions stored in `transcriptions/`.
 
-#### **After running in Docker open UI on [localhost:8081](http://localhost:808)**
+---
 
-```bash
-docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
-```
+## 🚀 Deployment Profiles
 
-or
+Speech2Brief provides pre-configured profiles tailored for different hardware configurations:
 
+| Profile | Target Hardware | WhisperX Model | LLM Model & Engine | Backend Port | Performance Tier |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`hybrid`** ⭐ *(Recommended)* | **macOS Apple Silicon (M1–M5)** | `medium` (Native CPU) | **LM Studio Metal GPU** (`1234`) | `5050` *(Native)* | 🚀 **Highest (Metal GPU)** |
+| **`cpu-apple-silicon`** | macOS Apple Silicon in Docker | `medium` / `int8` (8 threads) | `llama3.2:3b` (Ollama Docker) | `5050` | ⚡ Fast (100% Docker) |
+| **`cpu`** | Generic x86_64 / ARM CPU | `small` / `int8` | `llama3.2:1b` (Ollama Docker) | `5050` | 💻 Lightweight / Laptops |
+| **`basic`** | NVIDIA GPU (4–6 GB VRAM) | `small` / `float16` | `llama3:8b` (Ollama Docker) | `5000` | 🎮 Entry GPU |
+| **`medium`** | NVIDIA GPU (6–8 GB VRAM) | `medium` / `float16` (batch 4) | `llama3:8b` (Ollama Docker) | `5000` | 🖥️ Workstation GPU |
+| **`large`** | NVIDIA GPU (≥ 8 GB VRAM) | `medium` / `float16` (batch 8) | `llama3:8b` (Ollama Docker) | `5000` | 🏢 High-throughput Server |
+
+---
+
+## ⚡ Option 1: Hybrid Mode (macOS Apple Silicon — Most Optimized)
+
+> [!TIP]
+> **Why Hybrid Mode is the fastest on Mac**: Docker on macOS runs inside a Linux virtual machine without Apple Metal GPU pass-through. In Hybrid mode, the backend runs natively on macOS with direct access to physical M-cores and unified memory, while summarization runs on **LM Studio with native Metal GPU acceleration** (~30–60+ tokens/sec).
+
+### Setup & Launch
+1. Download and start [LM Studio](https://lmstudio.ai/).
+2. Load any model (e.g. `meta-llama-3-8b-instruct`, `mistral-7b`, or `gemma-2-9b`) and click **Start Server** on port `1234`.
+3. In the repository root, run:
+   ```bash
+   ./run_hybrid_mac.sh
+   ```
+
+The script automatically sets up the Python virtual environment, verifies dependencies, starts the frontend container at `http://localhost:8081`, and launches the native backend at `http://localhost:5050`.
+
+---
+
+## 🐳 Option 2: Docker Compose (All Platforms)
+
+Run everything inside Docker containers without installing Python or local AI tools on your host:
+
+### macOS Apple Silicon (100% Docker)
 ```bash
 docker compose -f docker/docker-compose.yml --profile cpu-apple-silicon --project-name speech2brief up --build -d
 ```
 
-or
-
+### Generic CPU (Laptops / Systems without GPU)
 ```bash
+docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
+```
+
+### NVIDIA GPU Systems
+```bash
+# Basic (Entry GPU):
+docker compose -f docker/docker-compose.yml --profile basic --project-name speech2brief up --build -d
+
+# Medium (Workstation GPU):
+docker compose -f docker/docker-compose.yml --profile medium --project-name speech2brief up --build -d
+
+# Large (High-VRAM GPU Server):
 docker compose -f docker/docker-compose.yml --profile large --project-name speech2brief up --build -d
 ```
 
-or
+Open **`http://localhost:8081`** in your browser.
 
+> [!NOTE]
+> On macOS, port `5000` is reserved for AirPlay Receiver (`ControlCenter`). The `hybrid`, `cpu-apple-silicon`, and `cpu` profiles map to port **`5050`** automatically.
+
+---
+
+## 🔑 Speaker Diarization Setup (Hugging Face)
+
+Speaker diarization uses PyAnnote 3.1, which requires accepting user conditions on Hugging Face:
+1. Accept the conditions for [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1) and [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0).
+2. Create a Hugging Face user token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+3. Add your token in `.env`:
+   ```ini
+   HF_TOKEN=hf_yourTokenHere
+   ```
+*(If omitted, Speech2Brief will automatically run in single-speaker Fast Mode without error).*
+
+---
+
+## 🌐 HTTP API Reference
+
+The backend exposes a REST and Server-Sent Events (SSE) API at `http://localhost:5050` (or `http://localhost:5000` on GPU profiles):
+
+### Transcribe & Summarize
 ```bash
-docker compose -f docker/docker-compose.yml --profile medium --project-name speech2brief up --build -d
+# Fast mode (no diarization)
+curl -X POST \
+  -F "file=@meeting.mp3" \
+  -F "diarization=false" \
+  http://localhost:5050/summarize
+
+# With diarization and speaker bounds (real-time SSE stream)
+curl -N -X POST \
+  -F "file=@meeting.mp3" \
+  -F "diarization=true" \
+  -F "min_speakers=2" \
+  -F "max_speakers=5" \
+  "http://localhost:5050/summarize?stream=true"
 ```
 
-or
+### History Management
+* `GET /transcriptions` — List all saved transcription sessions.
+* `GET /transcriptions/<id>` — Retrieve full details, segments, speaker map, and summary for a session.
+* `PATCH /transcriptions/<id>/speakers` — Update speaker names mapping.
+* `DELETE /transcriptions/<id>` — Delete a saved transcription file.
+* `GET /config` — Probe active profile, models loaded, and hardware settings.
 
-```bash
-docker compose -f docker/docker-compose.yml --profile basic --project-name speech2brief up --build -d
-```
+---
 
-### 💬 Deploy Telegram Bot (optional)
+## 💬 Optional Telegram Bot Microservice
 
+To transcribe voice notes directly from Telegram:
 ```bash
 docker build -f docker/telegram-bot/Dockerfile -t telegram-bot:latest docker/telegram-bot
-
-```
-
-and then
-
-```bash
 docker run -d \
   --name speech2brief-telegram-bot \
   --network speech2brief_default \
   --label com.docker.compose.project=speech2brief \
-  -e TELEGRAM_BOT_TOKEN=your_real_token \
-  -e PROFILE=cpu \
+  -e TELEGRAM_BOT_TOKEN=your_telegram_bot_token \
+  -e PROFILE=cpu-apple-silicon \
   telegram-bot:latest
 ```
 
-Profile should be one of the following:
+---
 
-- cpu
-- basic
-- medium
-- large
-
-This project can be run entirely via Docker and Docker Compose to streamline GPU usage, model management, and service orchestration. The Compose setup offers three profiles, each tailored to different system resources and performance needs.
-
-| Profile | WhisperX Model | Llama 3 Model | Batch Size | Intended Usage                                |
-| :------ | :------------- | :------------ | :--------- | :-------------------------------------------- |
-| cpu     | small          | llama3.2:1b   | 1          | Laptops/entry-level PCs with NO GPU           |
-| cpu-apple-silicon | medium | llama3.2:3b | 4        | macOS Apple Silicon (M1–M5 in Docker)         |
-| basic   | small          | llama3:8b     | 2          | Entry-level PCs with GPU                      |
-| medium  | medium         | llama3:8b     | 4          | Powerful desktops/workstations with GPU       |
-| large   | medium         | llama3:8b     | 8          | Servers/high-throughput environments with GPU |
-
-### 📑 Details
-
-**cpu**
-
-- Slow transcription (WhisperX small model).
-- Efficient batch size (2).
-- llama3.2:1b, very lightweight model for quick results using CPU only.
-- Suitable for laptops and less powerful PCs with no GPU.
-
-**basic**
-
-- Fast, lightweight transcription (WhisperX small model).
-- Efficient batch size (2).
-- Llama 3 8B, ideal for quick summaries.
-- Suitable for laptops and less powerful GPUs.
-
-**medium**
-
-- High-accuracy transcription (WhisperX medium model).
-- Balanced batch size (4) for increased performance.
-- For powerful desktops and most workstations.
-
-**large**
-
-- Maximum throughput (batch size 8) and WhisperX medium.
-- Llama 3 8B, ultra-fast.
-- Designed for GPU servers with 8 or more VRAM GB.
-
-## 🌐 API endpoint `POST /summarize`
-
-### 🌐 Send a request to the endpoint:
-
-Example using curl:
-
-```curl
-curl -F "file=@yourmeeting.mp3" http://localhost:5000/summarize
-```
-
-### 🌐 Request
-
-multipart/form-data:
-
-- file: The audio file to be transcribed and summarized (required).
-
-### 🌐 Response (example)
-
-```javascript
-{
-  "processing_time_seconds": 6.04,
-  "resumen": "Chronological summary of the meeting: ...",
-  "transcription": [
-    {
-      "start": 7.118,
-      "end": 28.55,
-      "text": "A person is not just tired, but exhausted. ..."
-    },
-    {
-      "start": 32.515,
-      "end": 62.367,
-      "text": "Communication. No, to court women. Today we'll talk about William Shakespeare. ..."
-    }
-    // ...more transcript segments...
-  ]
-}`
-```
+## 📖 Additional Documentation
+* For native CUDA installation on Windows or Linux, see **[INSTALL.md](file:///Users/id05376/Documents/code/Speech2Brief/INSTALL.md)**.
+* For internal architectural specs and developer runbooks, see **[AGENTS.md](file:///Users/id05376/Documents/code/Speech2Brief/AGENTS.md)**.
