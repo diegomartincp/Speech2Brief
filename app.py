@@ -62,6 +62,7 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://llama3:11434")
 LMSTUDIO_HOST = os.environ.get("LMSTUDIO_HOST", "http://localhost:1234/v1")
 LLAMA_MODEL = os.environ.get("LLAMA_MODEL", "llama3:8b")
 LMSTUDIO_MODEL = os.environ.get("LMSTUDIO_MODEL", LLAMA_MODEL)
+LLM_TIMEOUT = int(os.environ.get("LLM_TIMEOUT", 600))
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -192,7 +193,7 @@ def summarize_with_llama3(prompt, model=None, host=None):
         "stream": False
     }
     try:
-        r = requests.post(url, json=payload, timeout=300)
+        r = requests.post(url, json=payload, timeout=LLM_TIMEOUT)
         r.raise_for_status()
         data = r.json()
         return data['response'].strip()
@@ -220,7 +221,7 @@ def summarize_with_lmstudio(prompt, model=None):
         "temperature": 0.3
     }
     try:
-        r = requests.post(url, json=payload, timeout=300)
+        r = requests.post(url, json=payload, timeout=LLM_TIMEOUT)
         r.raise_for_status()
         data = r.json()
         return data['choices'][0]['message']['content'].strip()
