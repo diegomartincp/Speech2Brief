@@ -82,12 +82,28 @@ if [ ! -f "$MARKER_FILE" ] || [ "$SCRIPT_DIR/requirements.txt" -nt "$MARKER_FILE
     echo "✅ Python dependencies ready."
 fi
 
-# 5. Check LM Studio Connectivity
+# 5. Check LM Studio Connectivity & Models
 echo "🔍 Checking LM Studio status at http://localhost:1234/v1..."
 LMSTUDIO_ONLINE=false
 if curl -s --connect-timeout 2 http://localhost:1234/v1/models >/dev/null 2>&1; then
     LMSTUDIO_ONLINE=true
-    echo "✅ LM Studio detected and ready on port 1234 (Metal GPU acceleration active)!"
+    echo "✅ LM Studio detected and ready on port 1234 (Metal GPU active)!"
+    
+    MODELS_RAW=$(curl -s http://localhost:1234/v1/models | grep -o '"id": "[^"]*"' | cut -d'"' -f4 || true)
+    if [ -n "$MODELS_RAW" ]; then
+        echo "📋 Available models loaded in LM Studio:"
+        while IFS= read -r m; do
+            echo "   - $m"
+        done <<< "$MODELS_RAW"
+        
+        if [ -n "$LMSTUDIO_MODEL" ]; then
+            echo "🎯 Configured model: '$LMSTUDIO_MODEL'"
+        else
+            FIRST_MODEL=$(echo "$MODELS_RAW" | head -n 1)
+            export LMSTUDIO_MODEL="$FIRST_MODEL"
+            echo "🎯 Using model: '$LMSTUDIO_MODEL' (you can change it in the Web UI or set LMSTUDIO_MODEL in .env)"
+        fi
+    fi
 else
     echo "------------------------------------------------------------------"
     echo "⚠️  [NOTICE] LM Studio server is NOT currently responding on port 1234."
@@ -128,6 +144,7 @@ export DEVICE="cpu"
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-$PHYS_CORES}"
 export LLM_PROVIDER="lmstudio"
 export LMSTUDIO_HOST="http://localhost:1234/v1"
+export OLLAMA_HOST="${OLLAMA_HOST:-http://localhost:11434}"
 export LLAMA_MODEL="${LLAMA_MODEL:-llama3:8b}"
 
 echo "=================================================================="

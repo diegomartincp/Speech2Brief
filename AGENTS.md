@@ -80,6 +80,7 @@ HF_TOKEN=hf_yourTokenHere
 # LLM Provider Configuration (Optional, defaults to "ollama" in Docker, "lmstudio" in hybrid script)
 LLM_PROVIDER=lmstudio
 LMSTUDIO_HOST=http://localhost:1234/v1
+LMSTUDIO_MODEL=llama3:8b
 LLAMA_MODEL=llama3:8b
 PORT=5050
 ```

@@ -4,25 +4,32 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Users, Zap, Settings2 } from 'lucide-react';
+import { Users, Zap, Settings2, Brain } from 'lucide-react';
 
 export interface ProcessingOptionsState {
   enableDiarization: boolean;
   enableSpeakerRange: boolean;
   minSpeakers: number;
   maxSpeakers: number;
+  selectedModel?: string;
 }
 
 interface ProcessingOptionsProps {
   options: ProcessingOptionsState;
   onChange: (options: ProcessingOptionsState) => void;
   disabled?: boolean;
+  availableModels?: string[];
+  currentModel?: string;
+  llmProvider?: string;
 }
 
 export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
   options,
   onChange,
   disabled = false,
+  availableModels = [],
+  currentModel = '',
+  llmProvider = 'ollama',
 }) => {
   const handleToggleDiarization = (checked: boolean) => {
     onChange({ ...options, enableDiarization: checked });
@@ -137,6 +144,56 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
               )}
             </div>
           )}
+
+          {/* LLM Model Selection Section */}
+          <div className="pt-3 border-t border-border/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-500">
+                <Brain className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="model-select" className="text-sm font-semibold text-foreground">
+                    Summarization Model
+                  </Label>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 font-medium">
+                    {llmProvider === 'lmstudio' ? 'LM Studio (Metal GPU)' : 'Ollama'}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Specify the local model to generate structured chronological summaries.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {availableModels && availableModels.length > 0 ? (
+                <select
+                  id="model-select"
+                  value={options.selectedModel || currentModel || availableModels[0]}
+                  onChange={(e) => onChange({ ...options, selectedModel: e.target.value })}
+                  disabled={disabled}
+                  className="h-8 px-3 rounded-md bg-muted/70 border border-border/60 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-64"
+                >
+                  {availableModels.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  id="model-input"
+                  type="text"
+                  placeholder={currentModel || "e.g. llama3:8b"}
+                  value={options.selectedModel !== undefined ? options.selectedModel : (currentModel || '')}
+                  onChange={(e) => onChange({ ...options, selectedModel: e.target.value })}
+                  disabled={disabled}
+                  className="w-full sm:w-64 h-8 text-xs font-mono"
+                />
+              )}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

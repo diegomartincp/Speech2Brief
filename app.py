@@ -61,6 +61,7 @@ LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "ollama").lower()
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://llama3:11434")
 LMSTUDIO_HOST = os.environ.get("LMSTUDIO_HOST", "http://localhost:1234/v1")
 LLAMA_MODEL = os.environ.get("LLAMA_MODEL", "llama3:8b")
+LMSTUDIO_MODEL = os.environ.get("LMSTUDIO_MODEL", LLAMA_MODEL)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -92,12 +93,35 @@ def get_diarization_pipeline():
     return diarize_pipeline
 
 
+def get_available_lmstudio_models():
+    """Returns a list of all model IDs available in LM Studio."""
+    try:
+        url = f"{LMSTUDIO_HOST.rstrip('/')}/models"
+        r = requests.get(url, timeout=2)
+        if r.status_code == 200:
+            data = r.json()
+            return [m["id"] for m in data.get("data", []) if "id" in m]
+    except Exception:
+        pass
+    return []
+
+
 @app.route('/config', methods=['GET'])
 def get_config():
     """Returns active profile and model configuration."""
     token = os.environ.get("HF_TOKEN") or HF_TOKEN
     is_lmstudio = (LLM_PROVIDER == "lmstudio") or ("1234" in LMSTUDIO_HOST) or ("1234" in OLLAMA_HOST)
-    llm_display = f"LM Studio ({LLAMA_MODEL})" if is_lmstudio else LLAMA_MODEL
+    
+    available_models = []
+    if is_lmstudio:
+        available_models = get_available_lmstudio_models()
+        # If user configured LMSTUDIO_MODEL, use it; otherwise use the first from LM Studio if available
+        active_model = os.environ.get("LMSTUDIO_MODEL") or (available_models[0] if available_models else LLAMA_MODEL)
+        llm_display = f"LM Studio ({active_model})"
+    else:
+        active_model = LLAMA_MODEL
+        llm_display = LLAMA_MODEL
+
     return jsonify({
         "profile": PROFILE_NAME,
         "device": device,
@@ -105,6 +129,8 @@ def get_config():
         "compute_type": COMPUTE_TYPE,
         "batch_size": BATCH_SIZE,
         "llama_model": llm_display,
+        "selected_model": active_model,
+        "available_models": available_models,
         "llm_provider": "lmstudio" if is_lmstudio else "ollama",
         "threads": OMP_NUM_THREADS,
         "diarization_available": bool(token)
@@ -155,11 +181,12 @@ def make_summary_prompt(segments):
     return prompt
 
 
-def summarize_with_llama3(prompt):
+def summarize_with_llama3(prompt, model=None):
     """Calls Ollama endpoint and returns the response as a string."""
+    target_model = model or LLAMA_MODEL
     url = f"{OLLAMA_HOST}/api/generate"
     payload = {
-        "model": LLAMA_MODEL,
+        "model": target_model,
         "prompt": prompt,
         "stream": False
     }
@@ -170,14 +197,15 @@ def summarize_with_llama3(prompt):
         return data['response'].strip()
     except Exception as e:
         print(f"\n❌ [ERROR] Exception during Ollama request: {str(e)}\n", flush=True)
-        raise RuntimeError(f"Error calling Ollama: {str(e)}")
+        raise RuntimeError(f"Error calling Ollama with model '{target_model}': {str(e)}")
 
 
-def summarize_with_lmstudio(prompt):
-    """Calls LM Studio / OpenAI-compatible endpoint."""
+def summarize_with_lmstudio(prompt, model=None):
+    """Calls LM Studio / OpenAI-compatible endpoint with the explicitly chosen model."""
+    target_model = model or os.environ.get("LMSTUDIO_MODEL") or LLAMA_MODEL
     url = f"{LMSTUDIO_HOST.rstrip('/')}/chat/completions"
     payload = {
-        "model": LLAMA_MODEL,
+        "model": target_model,
         "messages": [
             {
                 "role": "system",
@@ -196,15 +224,37 @@ def summarize_with_lmstudio(prompt):
         data = r.json()
         return data['choices'][0]['message']['content'].strip()
     except Exception as e:
-        print(f"\n❌ [ERROR] Exception during LM Studio request: {str(e)}\n", flush=True)
-        raise RuntimeError(f"Error calling LM Studio at {url}: {str(e)}")
+        print(f"\n❌ [ERROR] Exception during LM Studio request with model '{target_model}': {str(e)}\n", flush=True)
+        raise RuntimeError(f"Error calling LM Studio with model '{target_model}' at {url}: {str(e)}")
 
 
-def summarize_text(prompt):
-    """Dispatches to the configured LLM provider (Ollama or LM Studio)."""
+def summarize_text(prompt, model=None):
+    """Dispatches to the configured LLM provider using the selected model, with automatic fallback."""
+    target_model = model or os.environ.get("LMSTUDIO_MODEL") or LLAMA_MODEL
     if LLM_PROVIDER == "lmstudio" or "1234" in LMSTUDIO_HOST or "1234" in OLLAMA_HOST:
-        return summarize_with_lmstudio(prompt)
-    return summarize_with_llama3(prompt)
+        try:
+            return summarize_with_lmstudio(prompt, model=target_model)
+        except Exception as lm_err:
+            print(f"⚠️ [NOTICE] LM Studio failed for model '{target_model}' ({lm_err}). Checking Ollama fallback...", flush=True)
+            # Try fallback to Ollama on host or container port 11434
+            for host in ["http://localhost:11434", "http://127.0.0.1:11434", OLLAMA_HOST]:
+                try:
+                    check_r = requests.get(f"{host}/api/tags", timeout=2)
+                    if check_r.status_code == 200:
+                        print(f"🔄 [FALLBACK] Using local Ollama at {host} with model '{LLAMA_MODEL}'...", flush=True)
+                        global OLLAMA_HOST
+                        orig_host = OLLAMA_HOST
+                        OLLAMA_HOST = host
+                        res = summarize_with_llama3(prompt, model=LLAMA_MODEL)
+                        OLLAMA_HOST = orig_host
+                        return res
+                except Exception:
+                    continue
+            raise RuntimeError(
+                f"LM Studio is not connected at {LMSTUDIO_HOST} (Connection Refused). "
+                f"To fix: Open LM Studio on your Mac -> Load your model '{target_model}' -> Go to the '<->' (Developer/Local Server) tab -> Click 'Start Server' on port 1234."
+            )
+    return summarize_with_llama3(prompt, model=target_model)
 
 
 def sse_message(step, message, progress=0, data=None):
@@ -245,6 +295,10 @@ def summarize():
     except (ValueError, TypeError):
         max_speakers = None
 
+    requested_model = request.form.get("model", "").strip() or None
+    is_lmstudio = (LLM_PROVIDER == "lmstudio") or ("1234" in LMSTUDIO_HOST) or ("1234" in OLLAMA_HOST)
+    selected_llm_model = requested_model or (os.environ.get("LMSTUDIO_MODEL") if is_lmstudio else None) or LLAMA_MODEL
+
     original_name = file.filename or "upload"
     _, ext = os.path.splitext(original_name.lower())
     if not ext:
@@ -263,6 +317,7 @@ def summarize():
         print("\n" + "="*65, flush=True)
         print(f"📥 [NEW REQUEST] Processing: '{original_name}' ({file_size_mb:.2f} MB)", flush=True)
         print(f"⚙️ [OPTIONS] Diarization: {diarization_enabled} (min={min_speakers}, max={max_speakers})", flush=True)
+        print(f"🤖 [MODEL] Summarization Model: '{selected_llm_model}' ({'LM Studio' if is_lmstudio else 'Ollama'})", flush=True)
         print("="*65, flush=True)
 
         if is_stream:
@@ -390,8 +445,7 @@ def summarize():
         print(f"👥 [SPEAKERS DETECTED] Found {len(speakers_set)} speaker(s): {sorted(list(speakers_set))}", flush=True)
 
         # 5. Summarization with LLM (Ollama or LM Studio)
-        is_lmstudio = (LLM_PROVIDER == "lmstudio") or ("1234" in LMSTUDIO_HOST) or ("1234" in OLLAMA_HOST)
-        llm_label = f"LM Studio ({LLAMA_MODEL})" if is_lmstudio else f"Ollama ({LLAMA_MODEL})"
+        llm_label = f"LM Studio ({selected_llm_model})" if is_lmstudio else f"Ollama ({selected_llm_model})"
 
         prompt = make_summary_prompt(segments_output)
         print(f"🧠 [SUMMARIZING] Generating chronological summary with {llm_label}...", flush=True)
@@ -400,7 +454,7 @@ def summarize():
 
         try:
             t_sum_start = time.time()
-            resumen = summarize_text(prompt)
+            resumen = summarize_text(prompt, model=selected_llm_model)
             print(f"✅ [SUMMARY GENERATED] Completed in {time.time() - t_sum_start:.2f}s", flush=True)
         except Exception as e:
             print(f"❌ [ERROR] Summarization failed: {str(e)}", flush=True)
@@ -431,7 +485,8 @@ def summarize():
                 "profile": PROFILE_NAME,
                 "whisperx_model": WHISPERX_MODEL,
                 "compute_type": COMPUTE_TYPE,
-                "llama_model": LLAMA_MODEL,
+                "llama_model": selected_llm_model,
+                "llm_provider": "lmstudio" if is_lmstudio else "ollama",
                 "diarization_enabled": diarization_enabled,
                 "speakers_detected": len(speakers_set)
             }

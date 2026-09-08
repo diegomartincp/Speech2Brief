@@ -57,6 +57,12 @@ const Index = () => {
         if (res.ok) {
           const data = await res.json();
           setSystemConfig(data);
+          if (data.selected_model) {
+            setOptions(prev => ({
+              ...prev,
+              selectedModel: prev.selectedModel || data.selected_model
+            }));
+          }
         }
       } catch (e) {
         console.warn('[Speech2Brief] Could not fetch backend system config:', e);
@@ -83,6 +89,9 @@ const Index = () => {
     if (options.enableDiarization && options.enableSpeakerRange) {
       formData.append('min_speakers', options.minSpeakers.toString());
       formData.append('max_speakers', options.maxSpeakers.toString());
+    }
+    if (options.selectedModel) {
+      formData.append('model', options.selectedModel);
     }
 
     try {
@@ -342,6 +351,9 @@ const Index = () => {
                   <ProcessingOptions
                     options={options}
                     onChange={setOptions}
+                    availableModels={systemConfig?.available_models}
+                    currentModel={systemConfig?.selected_model}
+                    llmProvider={systemConfig?.llm_provider}
                   />
                   <AudioUpload onFileSelect={handleFileSelect} />
                 </>
