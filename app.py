@@ -37,7 +37,7 @@ if os.path.exists(env_path):
     except Exception:
         pass
 
-device = os.environ.get("DEVICE", "cuda")
+device = os.environ.get("DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
 OMP_NUM_THREADS = int(os.environ.get("OMP_NUM_THREADS", 8 if device == "cpu" else 4))
 if device == "cpu":
     torch.set_num_threads(OMP_NUM_THREADS)

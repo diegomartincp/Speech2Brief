@@ -1,5 +1,8 @@
 venv
+.venv
 temp
 check-cuda.py
 .env
 transcriptions/*.json
+__pycache__/
+*.pyc

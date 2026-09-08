@@ -76,7 +76,7 @@ source "$VENV_DIR/bin/activate"
 MARKER_FILE="$VENV_DIR/.requirements_installed"
 if [ ! -f "$MARKER_FILE" ] || [ "$SCRIPT_DIR/requirements.txt" -nt "$MARKER_FILE" ]; then
     echo "📥 Installing / verifying Python dependencies from requirements.txt..."
-    pip install --upgrade pip
+    pip install --upgrade pip "setuptools<70"
     pip install -r requirements.txt
     touch "$MARKER_FILE"
     echo "✅ Python dependencies ready."
