@@ -12,9 +12,12 @@
 
 set -e
 
-# Ensure Homebrew is in PATH
+# Ensure Homebrew and LM Studio are in PATH
 if [ -d "/opt/homebrew/bin" ]; then
     export PATH="/opt/homebrew/bin:$PATH"
+fi
+if [ -d "$HOME/.lmstudio/bin" ]; then
+    export PATH="$HOME/.lmstudio/bin:$PATH"
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -85,6 +88,22 @@ fi
 # 5. Check LM Studio Connectivity & Models
 echo "🔍 Checking LM Studio status at http://localhost:1234/v1..."
 LMSTUDIO_ONLINE=false
+
+# If server is not responding, attempt automatic start via lms CLI
+if ! curl -s --connect-timeout 2 http://localhost:1234/v1/models >/dev/null 2>&1; then
+    LMS_BIN=""
+    if command -v lms >/dev/null 2>&1; then
+        LMS_BIN="$(command -v lms)"
+    elif [ -x "$HOME/.lmstudio/bin/lms" ]; then
+        LMS_BIN="$HOME/.lmstudio/bin/lms"
+    fi
+    if [ -n "$LMS_BIN" ]; then
+        echo "⚡ Starting LM Studio server on port 1234 via CLI ($LMS_BIN)..."
+        "$LMS_BIN" server start -p 1234 --cors >/dev/null 2>&1 || true
+        sleep 1
+    fi
+fi
+
 if curl -s --connect-timeout 2 http://localhost:1234/v1/models >/dev/null 2>&1; then
     LMSTUDIO_ONLINE=true
     echo "✅ LM Studio detected and ready on port 1234 (Metal GPU active)!"
@@ -109,7 +128,7 @@ else
     echo "⚠️  [NOTICE] LM Studio server is NOT currently responding on port 1234."
     echo "   To enable ultra-fast Apple Silicon Metal GPU summarization:"
     echo "   1. Open LM Studio on your Mac."
-    echo "   2. Load your model (e.g. Llama 3 8B Instruct with Apple Metal GPU)."
+    echo "   2. Load your model (e.g. google/gemma-4-12b-qat or Llama 3 with Metal GPU)."
     echo "   3. Go to the '<->' (Developer/Local Server) tab and click 'Start Server'."
     echo "   (The backend will still start and wait for requests)."
     echo "------------------------------------------------------------------"
