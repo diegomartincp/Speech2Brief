@@ -93,7 +93,7 @@ services:
     image: speech2brief-llama3-cpu-apple-silicon:latest
     profiles: ["cpu-apple-silicon"]
     environment:
-      - LLAMA_MODEL=llama3:8b
+      - LLAMA_MODEL=llama3.2:3b
       - OLLAMA_NUM_THREADS=8
     ports:
       - "11434:11434"
@@ -115,7 +115,7 @@ services:
       - OLLAMA_HOST=http://speech2brief-llama3-cpu-apple-silicon:11434
       - DEVICE=cpu
       - LLM_PROVIDER=ollama
-      - LLAMA_MODEL=llama3:8b
+      - LLAMA_MODEL=llama3.2:3b
       - HF_TOKEN=${HF_TOKEN:-}
       - PYTHONUNBUFFERED=1
       - PROFILE_NAME=cpu-apple-silicon

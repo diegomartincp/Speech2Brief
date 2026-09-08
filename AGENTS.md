@@ -24,7 +24,7 @@ All containers run under the Docker Compose project name `speech2brief`.
 | Profile | Target Architecture | Backend Port (Host:Container) | Frontend Port | WhisperX Model / Compute | LLM Model |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **`hybrid`** | **macOS Apple Silicon (Native + LM Studio)** | **`5050`** *(Native Mac CPU)* | **`8081:80`** | `medium` / `int8` (Native Mac M-cores) | **LM Studio Metal GPU** (`1234`) |
-| **`cpu-apple-silicon`** | **macOS Apple Silicon (M1–M5 in Docker)** | **`5050:5000`** *(Avoids AirPlay)* | **`8081:80`** | `medium` / `int8` (8 CPU threads) | `llama3:8b` (Ollama) |
+| **`cpu-apple-silicon`** | **macOS Apple Silicon (M1–M5 in Docker)** | **`5050:5000`** *(Avoids AirPlay)* | **`8081:80`** | `medium` / `int8` (8 CPU threads) | `llama3.2:3b` (Ollama) |
 | **`cpu`** | Generic x86_64 / ARM CPU | `5050:5000` | `8081:80` | `small` / `int8` | `llama3.2:1b` (Ollama) |
 | **`basic`** | NVIDIA GPU (entry/laptop) | `5000:5000` | `8081:80` | `small` / `float16` | `llama3:8b` (Ollama) |
 | **`medium`** | NVIDIA GPU (workstation) | `5000:5000` | `8081:80` | `medium` / `float16` | `llama3:8b` (Ollama) |
