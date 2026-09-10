@@ -65,6 +65,7 @@ LMSTUDIO_MODEL = os.environ.get("LMSTUDIO_MODEL", LLAMA_MODEL)
 LLM_TIMEOUT = int(os.environ.get("LLM_TIMEOUT", 600))
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024  # 1 GB max file upload
 CORS(app)  # Enable CORS for all routes
 
 if device == "cpu":
@@ -281,6 +282,7 @@ def summarize():
         return jsonify({"error": "No selected file"}), 400
 
     diarization_enabled = request.form.get("diarization", "true").lower() in ("true", "1", "yes")
+    summarization_enabled = request.form.get("summarization", "true").lower() in ("true", "1", "yes")
     min_speakers = request.form.get("min_speakers", None)
     max_speakers = request.form.get("max_speakers", None)
     try:
@@ -313,8 +315,11 @@ def summarize():
 
         print("\n" + "="*65, flush=True)
         print(f"📥 [NEW REQUEST] Processing: '{original_name}' ({file_size_mb:.2f} MB)", flush=True)
-        print(f"⚙️ [OPTIONS] Diarization: {diarization_enabled} (min={min_speakers}, max={max_speakers})", flush=True)
-        print(f"🤖 [MODEL] Summarization Model: '{selected_llm_model}' ({'LM Studio' if is_lmstudio else 'Ollama'})", flush=True)
+        print(f"⚙️ [OPTIONS] Diarization: {diarization_enabled} (min={min_speakers}, max={max_speakers}) | Summarization: {summarization_enabled}", flush=True)
+        if summarization_enabled:
+            print(f"🤖 [MODEL] Summarization Model: '{selected_llm_model}' ({'LM Studio' if is_lmstudio else 'Ollama'})", flush=True)
+        else:
+            print("🤖 [MODEL] Summarization: Disabled (transcription only)", flush=True)
         print("="*65, flush=True)
 
         if is_stream:
@@ -442,22 +447,27 @@ def summarize():
         print(f"👥 [SPEAKERS DETECTED] Found {len(speakers_set)} speaker(s): {sorted(list(speakers_set))}", flush=True)
 
         # 5. Summarization with LLM (Ollama or LM Studio)
-        llm_label = f"LM Studio ({selected_llm_model})" if is_lmstudio else f"Ollama ({selected_llm_model})"
-
-        prompt = make_summary_prompt(segments_output)
-        print(f"🧠 [SUMMARIZING] Generating chronological summary with {llm_label}...", flush=True)
-        if is_stream:
-            yield sse_message("summarizing", f"Generating chronological summary with {llm_label}...", 90)
-
-        try:
-            t_sum_start = time.time()
-            resumen = summarize_text(prompt, model=selected_llm_model)
-            print(f"✅ [SUMMARY GENERATED] Completed in {time.time() - t_sum_start:.2f}s", flush=True)
-        except Exception as e:
-            print(f"❌ [ERROR] Summarization failed: {str(e)}", flush=True)
+        resumen = ""
+        if summarization_enabled:
+            llm_label = f"LM Studio ({selected_llm_model})" if is_lmstudio else f"Ollama ({selected_llm_model})"
+            prompt = make_summary_prompt(segments_output)
+            print(f"🧠 [SUMMARIZING] Generating chronological summary with {llm_label}...", flush=True)
             if is_stream:
-                yield sse_message("error", f"Summarization failed: {str(e)}", 0)
-            return
+                yield sse_message("summarizing", f"Generating chronological summary with {llm_label}...", 90)
+
+            try:
+                t_sum_start = time.time()
+                resumen = summarize_text(prompt, model=selected_llm_model)
+                print(f"✅ [SUMMARY GENERATED] Completed in {time.time() - t_sum_start:.2f}s", flush=True)
+            except Exception as e:
+                print(f"❌ [ERROR] Summarization failed: {str(e)}", flush=True)
+                if is_stream:
+                    yield sse_message("error", f"Summarization failed: {str(e)}", 0)
+                return
+        else:
+            print("ℹ️ [INFO] Summarization skipped by user option", flush=True)
+            if is_stream:
+                yield sse_message("summarizing_skipped", "Chronological summarization skipped (disabled by user)", 95)
 
         total_time = time.time() - request_start
         transcription_id = f"{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
@@ -482,9 +492,10 @@ def summarize():
                 "profile": PROFILE_NAME,
                 "whisperx_model": WHISPERX_MODEL,
                 "compute_type": COMPUTE_TYPE,
-                "llama_model": selected_llm_model,
-                "llm_provider": "lmstudio" if is_lmstudio else "ollama",
+                "llama_model": selected_llm_model if summarization_enabled else None,
+                "llm_provider": ("lmstudio" if is_lmstudio else "ollama") if summarization_enabled else "none",
                 "diarization_enabled": diarization_enabled,
+                "summarization_enabled": summarization_enabled,
                 "speakers_detected": len(speakers_set)
             }
         }
@@ -498,8 +509,12 @@ def summarize():
         except Exception as e:
             print(f"⚠️ [WARN] Could not save transcription JSON: {str(e)}", flush=True)
 
-        print("\n📍 Summary Generated:")
-        print(resumen, flush=True)
+        if resumen:
+            print("\n📍 Summary Generated:")
+            print(resumen, flush=True)
+        else:
+            print("\nℹ️ [INFO] No summary generated (transcription-only mode)", flush=True)
+
         print(f"\n🎉 [PIPELINE COMPLETED] Total processing time: {total_time:.2f}s", flush=True)
         print("="*65 + "\n", flush=True)
 

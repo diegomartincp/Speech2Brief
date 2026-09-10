@@ -14,7 +14,7 @@ Speech2Brief combines the high-speed neural speech recognition and phoneme align
 * ⚡ **High-Speed Execution**: Powered by CTranslate2 int8 quantization and optional Apple Metal GPU or NVIDIA CUDA acceleration.
 * 👥 **Speaker Identification (Diarization)**: Automatically distinguishes between different speakers (e.g. `SPEAKER_00`, `SPEAKER_01`) and allows you to rename them interactively.
 * 📝 **Chronological Summaries**: Generates structured, time-anchored meeting notes highlighting key discussion points, decisions, and action items.
-* 🎬 **Audio & Video Support**: Accepts `.mp3`, `.wav`, `.m4a`, `.mp4`, `.mov`, `.mkv`, `.ogg`, `.opus`, and WhatsApp voice notes.
+* 🎬 **Audio & Video Support**: Accepts `.mp3`, `.wav`, `.m4a`, `.mp4`, `.mov`, `.mkv`, `.ogg`, `.opus`, and WhatsApp voice notes up to **1GB**.
 * 🌐 **Modern Web Interface**: Built with React 18, Vite, Tailwind CSS, and shadcn/ui with live Server-Sent Events (SSE) progress tracking and persistent history.
 
 ---
@@ -26,12 +26,13 @@ Once launched (see deployment options below), navigate to:
 👉 **`http://localhost:8081`**
 
 ### 2. Upload Your Audio or Video
-Drag and drop your file into the upload zone or click to select from your file manager.
+Drag and drop your file into the upload zone or click to select from your file manager (supports files up to **1GB**).
 
 ### 3. Configure Processing Options
 * **Fast Mode (Disable Diarization)**: Transcribes the entire file ~5x faster. Ideal when speaker identification is not needed or for single-speaker audio.
 * **Speaker Diarization**: When enabled, PyAnnote segments audio by speaker. You can set minimum and maximum expected speakers to improve clustering accuracy.
-* **Custom LLM Model & Prompt**: Select or type your preferred summarization model and customize the summary prompt to fit your needs (e.g. bullet points, executive brief, meeting minutes).
+* **AI Chronological Summary (Optional)**: Toggle local LLM summarization on or off. Disabling summarization runs in **Transcription Only** mode to finish much faster without querying the LLM.
+* **Custom LLM Model**: When summary is enabled, select or specify your preferred local model (e.g. `llama3.2:3b`, `meta-llama-3-8b-instruct`, `mistral`, etc.).
 
 ### 4. Live Progress Tracking
 Follow real-time progress as the pipeline executes:
@@ -132,6 +133,12 @@ The backend exposes a REST and Server-Sent Events (SSE) API at `http://localhost
 curl -X POST \
   -F "file=@meeting.mp3" \
   -F "diarization=false" \
+  http://localhost:5050/summarize
+
+# Transcription only (skip LLM summary)
+curl -X POST \
+  -F "file=@meeting.mp3" \
+  -F "summarization=false" \
   http://localhost:5050/summarize
 
 # With diarization and speaker bounds (real-time SSE stream)

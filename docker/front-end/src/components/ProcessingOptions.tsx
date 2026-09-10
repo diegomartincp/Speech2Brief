@@ -11,6 +11,7 @@ export interface ProcessingOptionsState {
   enableSpeakerRange: boolean;
   minSpeakers: number;
   maxSpeakers: number;
+  enableSummarization: boolean;
   selectedModel?: string;
 }
 
@@ -33,6 +34,10 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
 }) => {
   const handleToggleDiarization = (checked: boolean) => {
     onChange({ ...options, enableDiarization: checked });
+  };
+
+  const handleToggleSummarization = (checked: boolean) => {
+    onChange({ ...options, enableSummarization: checked });
   };
 
   const handleToggleRange = (checked: boolean) => {
@@ -145,55 +150,79 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
             </div>
           )}
 
-          {/* LLM Model Selection Section */}
-          <div className="pt-3 border-t border-border/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-500">
+          {/* Main LLM Summarization Switch */}
+          <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/50">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500 mt-0.5">
                 <Brain className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="model-select" className="text-sm font-semibold text-foreground">
-                    Summarization Model
+                  <Label htmlFor="summarization-toggle" className="text-sm font-semibold cursor-pointer text-foreground">
+                    AI Chronological Summary (Local LLM)
                   </Label>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 font-medium">
-                    {llmProvider === 'lmstudio' ? 'LM Studio (Metal GPU)' : 'Ollama'}
-                  </span>
+                  {options.enableSummarization !== false ? (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 font-medium">
+                      {llmProvider === 'lmstudio' ? 'LM Studio (Metal GPU)' : 'Ollama'}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-medium">
+                      Transcription Only
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Specify the local model to generate structured chronological summaries.
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  {options.enableSummarization !== false
+                    ? "Generates structured chronological notes with key points, agreements, and decisions using your local LLM."
+                    : "Skips LLM summary generation to save time. Produces speech-to-text transcript and speaker identification only."}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              {availableModels && availableModels.length > 0 ? (
-                <select
-                  id="model-select"
-                  value={options.selectedModel || currentModel || availableModels[0]}
-                  onChange={(e) => onChange({ ...options, selectedModel: e.target.value })}
-                  disabled={disabled}
-                  className="h-8 px-3 rounded-md bg-muted/70 border border-border/60 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-64"
-                >
-                  {availableModels.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <Input
-                  id="model-input"
-                  type="text"
-                  placeholder={currentModel || "e.g. llama3:8b"}
-                  value={options.selectedModel !== undefined ? options.selectedModel : (currentModel || '')}
-                  onChange={(e) => onChange({ ...options, selectedModel: e.target.value })}
-                  disabled={disabled}
-                  className="w-full sm:w-64 h-8 text-xs font-mono"
-                />
-              )}
-            </div>
+            <Switch
+              id="summarization-toggle"
+              checked={options.enableSummarization !== false}
+              onCheckedChange={handleToggleSummarization}
+              disabled={disabled}
+            />
           </div>
+
+          {/* Sub-options: Summarization Model (only if summarization is enabled) */}
+          {options.enableSummarization !== false && (
+            <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+              <span className="text-muted-foreground text-xs font-medium">
+                Active Local Model:
+              </span>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {availableModels && availableModels.length > 0 ? (
+                  <select
+                    id="model-select"
+                    value={options.selectedModel || currentModel || availableModels[0]}
+                    onChange={(e) => onChange({ ...options, selectedModel: e.target.value })}
+                    disabled={disabled}
+                    className="h-8 px-3 rounded-md bg-muted/70 border border-border/60 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-64"
+                  >
+                    {availableModels.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    id="model-input"
+                    type="text"
+                    placeholder={currentModel || "e.g. llama3:8b"}
+                    value={options.selectedModel !== undefined ? options.selectedModel : (currentModel || '')}
+                    onChange={(e) => onChange({ ...options, selectedModel: e.target.value })}
+                    disabled={disabled}
+                    className="w-full sm:w-64 h-8 text-xs font-mono"
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

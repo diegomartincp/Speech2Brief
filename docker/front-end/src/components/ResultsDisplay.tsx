@@ -310,40 +310,61 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, apiEndp
         </div>
       </div>
 
-      {/* Chronological Summary Card */}
-      <Card className="shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <FileText className="w-5 h-5 text-primary" />
-            Executive Summary
-          </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopySummary}
-            className="flex items-center gap-1.5 h-8 text-xs"
-          >
-            {copiedSummary ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-emerald-500 font-medium">Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>Copy Summary</span>
-              </>
-            )}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="prose prose-sm max-w-none">
-            <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-              {results.resumen}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Chronological Summary Card (if generated) */}
+      {results.resumen && results.resumen.trim() ? (
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="w-5 h-5 text-primary" />
+              Executive Summary
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopySummary}
+              className="flex items-center gap-1.5 h-8 text-xs"
+            >
+              {copiedSummary ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-emerald-500 font-medium">Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>Copy Summary</span>
+                </>
+              )}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none">
+              <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+                {results.resumen}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="shadow-sm border-dashed border-border/70 bg-muted/20">
+          <CardContent className="py-5 px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted text-muted-foreground">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">No AI Summary Generated</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  This session was processed in Transcription Only mode (LLM summarization was skipped).
+                </p>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-xs font-mono text-muted-foreground">
+              Transcription Only
+            </Badge>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Transcription Card with Speakers & Copy Button */}
       <Card className="shadow-sm">

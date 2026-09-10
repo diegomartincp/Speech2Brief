@@ -22,6 +22,7 @@ export interface LoadingStateProps {
   stepMessage?: string;
   progress?: number;
   diarizationEnabled?: boolean;
+  summarizationEnabled?: boolean;
 }
 
 interface StepItem {
@@ -60,7 +61,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   currentStep = 'uploaded', 
   stepMessage,
   progress = 15,
-  diarizationEnabled = true
+  diarizationEnabled = true,
+  summarizationEnabled = true
 }) => {
   const [totalElapsed, setTotalElapsed] = useState<number>(0);
   const [stepElapsed, setStepElapsed] = useState<number>(0);
@@ -106,6 +108,9 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
     if (stepId === 'diarizing' && (!diarizationEnabled || currentStep === 'diarizing_skipped')) {
       return 'skipped';
     }
+    if (stepId === 'summarizing' && (!summarizationEnabled || currentStep === 'summarizing_skipped')) {
+      return 'skipped';
+    }
 
     const stepOrder = [
       'uploaded',
@@ -117,6 +122,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       'diarizing',
       'diarizing_skipped',
       'summarizing',
+      'summarizing_skipped',
       'completed'
     ];
 

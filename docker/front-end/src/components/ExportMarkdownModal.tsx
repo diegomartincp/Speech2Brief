@@ -145,11 +145,15 @@ export const ExportMarkdownModal: React.FC<ExportMarkdownModalProps> = ({
           <div className="flex items-center gap-2">
             <Checkbox
               id="include-summary"
-              checked={includeSummary}
+              checked={includeSummary && !!results.resumen}
               onCheckedChange={(checked) => setIncludeSummary(!!checked)}
+              disabled={!results.resumen}
             />
-            <Label htmlFor="include-summary" className="cursor-pointer font-medium">
-              Include AI Summary
+            <Label 
+              htmlFor="include-summary" 
+              className={`font-medium ${!results.resumen ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+            >
+              Include AI Summary {!results.resumen && '(N/A)'}
             </Label>
           </div>
 
