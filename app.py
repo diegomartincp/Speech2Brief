@@ -283,6 +283,9 @@ def summarize():
 
     diarization_enabled = request.form.get("diarization", "true").lower() in ("true", "1", "yes")
     summarization_enabled = request.form.get("summarization", "true").lower() in ("true", "1", "yes")
+    forced_language = request.form.get("language", "").strip().lower()
+    if not forced_language or forced_language == "auto":
+        forced_language = None
     min_speakers = request.form.get("min_speakers", None)
     max_speakers = request.form.get("max_speakers", None)
     try:
@@ -315,7 +318,7 @@ def summarize():
 
         print("\n" + "="*65, flush=True)
         print(f"📥 [NEW REQUEST] Processing: '{original_name}' ({file_size_mb:.2f} MB)", flush=True)
-        print(f"⚙️ [OPTIONS] Diarization: {diarization_enabled} (min={min_speakers}, max={max_speakers}) | Summarization: {summarization_enabled}", flush=True)
+        print(f"⚙️ [OPTIONS] Diarization: {diarization_enabled} (min={min_speakers}, max={max_speakers}) | Summarization: {summarization_enabled} | Language: {forced_language.upper() if forced_language else 'Auto-detect'}", flush=True)
         if summarization_enabled:
             print(f"🤖 [MODEL] Summarization Model: '{selected_llm_model}' ({'LM Studio' if is_lmstudio else 'Ollama'})", flush=True)
         else:
@@ -353,18 +356,26 @@ def summarize():
 
         # 2. Transcription with WhisperX
         t_transcribe_start = time.time()
-        print(f"🎙️ [TRANSCRIBING] WhisperX {WHISPERX_MODEL} (compute_type={COMPUTE_TYPE}, batch_size={BATCH_SIZE})...", flush=True)
-        if is_stream:
-            yield sse_message("transcribing", f"Transcribing audio with WhisperX ({WHISPERX_MODEL}, {COMPUTE_TYPE})...", 45)
+        transcribe_kwargs = {"batch_size": BATCH_SIZE}
+        if forced_language:
+            transcribe_kwargs["language"] = forced_language
+            print(f"🎙️ [TRANSCRIBING] WhisperX {WHISPERX_MODEL} (compute_type={COMPUTE_TYPE}, forced language: '{forced_language}')...", flush=True)
+            if is_stream:
+                yield sse_message("transcribing", f"Transcribing audio with WhisperX ({WHISPERX_MODEL}, language: {forced_language.upper()})...", 45)
+        else:
+            print(f"🎙️ [TRANSCRIBING] WhisperX {WHISPERX_MODEL} (compute_type={COMPUTE_TYPE}, auto-detect language)...", flush=True)
+            if is_stream:
+                yield sse_message("transcribing", f"Transcribing audio with WhisperX ({WHISPERX_MODEL}, auto-detecting language)...", 45)
 
         try:
             audio = whisperx.load_audio(audio_path_for_whisper)
-            result = model.transcribe(audio, batch_size=BATCH_SIZE)
-            detected_lang = result.get('language', 'en')
+            result = model.transcribe(audio, **transcribe_kwargs)
+            detected_lang = forced_language or result.get('language', 'en')
             t_transcribe = time.time() - t_transcribe_start
-            print(f"✅ [TRANSCRIBED] Detected language: '{detected_lang}', segments: {len(result.get('segments', []))} in {t_transcribe:.2f}s", flush=True)
+            lang_status = "forced" if forced_language else "detected"
+            print(f"✅ [TRANSCRIBED] Language: '{detected_lang}' ({lang_status}), segments: {len(result.get('segments', []))} in {t_transcribe:.2f}s", flush=True)
             if is_stream:
-                yield sse_message("language_detected", f"Detected language: {detected_lang.upper()} ({len(result.get('segments', []))} segments)", 60)
+                yield sse_message("language_detected", f"Language: {detected_lang.upper()} ({lang_status}, {len(result.get('segments', []))} segments)", 60)
         except Exception as e:
             print(f"❌ [ERROR] Transcription failed: {str(e)}", flush=True)
             if is_stream:
@@ -496,6 +507,8 @@ def summarize():
                 "llm_provider": ("lmstudio" if is_lmstudio else "ollama") if summarization_enabled else "none",
                 "diarization_enabled": diarization_enabled,
                 "summarization_enabled": summarization_enabled,
+                "language": forced_language or "auto",
+                "forced_language": forced_language,
                 "speakers_detected": len(speakers_set)
             }
         }

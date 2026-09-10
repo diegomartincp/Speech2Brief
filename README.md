@@ -29,6 +29,7 @@ Once launched (see deployment options below), navigate to:
 Drag and drop your file into the upload zone or click to select from your file manager (supports files up to **1GB**).
 
 ### 3. Configure Processing Options
+* **Audio Language (Forced or Auto-Detect)**: Choose a specific language (e.g. Spanish, English, Catalan, French, German) or leave on Auto-detect. Forcing the spoken language prevents Whisper from misdetecting languages on noisy/silent audio intros and hallucinating repetitive phrases.
 * **Fast Mode (Disable Diarization)**: Transcribes the entire file ~5x faster. Ideal when speaker identification is not needed or for single-speaker audio.
 * **Speaker Diarization**: When enabled, PyAnnote segments audio by speaker. You can set minimum and maximum expected speakers to improve clustering accuracy.
 * **AI Chronological Summary (Optional)**: Toggle local LLM summarization on or off. Disabling summarization runs in **Transcription Only** mode to finish much faster without querying the LLM.

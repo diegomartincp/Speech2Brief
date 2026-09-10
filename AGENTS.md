@@ -136,14 +136,16 @@ Assuming the backend is listening at `http://localhost:5050` (or `http://localho
 * **Purpose**: Uploads media file, extracts audio, transcribes, aligns phonemes, performs optional diarization, generates chronological summary, and saves JSON record.
 * **Form Parameters**:
   * `file` (Required): Audio or video binary file up to 1GB (`.mp3`, `.wav`, `.m4a`, `.mp4`, `.mov`, `.mkv`, etc.).
+  * `language` (Optional, string): Force language code (e.g. `es`, `en`, `fr`, `de`, `ca`). Skips auto-detection to prevent hallucinations on noisy audio. Default: auto-detect.
   * `diarization` (Optional, default `true`): Set to `false` for **Fast Mode** (~5x faster, skips PyAnnote clustering).
   * `summarization` (Optional, default `true`): Set to `false` for **Transcription Only Mode** (skips LLM summary generation).
   * `min_speakers` (Optional, integer): Minimum expected speakers (e.g. `1`).
   * `max_speakers` (Optional, integer): Maximum expected speakers (e.g. `6`).
-* **Curl (Fast Mode, no diarization)**:
+* **Curl (Forced Language + Fast Mode)**:
   ```bash
   curl -s -X POST \
     -F "file=@utils/el-cub-de-los-poetas-muertos.mp3" \
+    -F "language=es" \
     -F "diarization=false" \
     "http://localhost:5050/summarize?stream=true"
   ```

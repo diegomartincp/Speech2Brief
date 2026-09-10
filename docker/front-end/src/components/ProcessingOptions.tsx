@@ -1,10 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Users, Zap, Settings2, Brain } from 'lucide-react';
+import { Users, Zap, Settings2, Brain, Globe } from 'lucide-react';
+
+export const SUPPORTED_LANGUAGES = [
+  { code: 'auto', label: 'Auto-detect language' },
+  { code: 'es', label: 'Spanish (Español)' },
+  { code: 'en', label: 'English' },
+  { code: 'ca', label: 'Catalan (Català)' },
+  { code: 'gl', label: 'Galician (Galego)' },
+  { code: 'eu', label: 'Basque (Euskara)' },
+  { code: 'fr', label: 'French (Français)' },
+  { code: 'de', label: 'German (Deutsch)' },
+  { code: 'it', label: 'Italian (Italiano)' },
+  { code: 'pt', label: 'Portuguese (Português)' },
+  { code: 'nl', label: 'Dutch (Nederlands)' },
+  { code: 'ru', label: 'Russian (Русский)' },
+  { code: 'zh', label: 'Chinese (中文)' },
+  { code: 'ja', label: 'Japanese (日本語)' },
+  { code: 'ko', label: 'Korean (한국어)' },
+  { code: 'ar', label: 'Arabic (العربية)' },
+  { code: 'custom', label: 'Other (Custom code)...' },
+];
 
 export interface ProcessingOptionsState {
   enableDiarization: boolean;
@@ -13,6 +33,7 @@ export interface ProcessingOptionsState {
   maxSpeakers: number;
   enableSummarization: boolean;
   selectedModel?: string;
+  language?: string;
 }
 
 interface ProcessingOptionsProps {
@@ -32,6 +53,20 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
   currentModel = '',
   llmProvider = 'ollama',
 }) => {
+  const currentLang = options.language || 'auto';
+  const isKnownPreset = SUPPORTED_LANGUAGES.some(l => l.code === currentLang);
+  const [showCustomInput, setShowCustomInput] = useState(!isKnownPreset && currentLang !== 'auto');
+
+  const handleLanguageChange = (val: string) => {
+    if (val === 'custom') {
+      setShowCustomInput(true);
+      onChange({ ...options, language: '' });
+    } else {
+      setShowCustomInput(false);
+      onChange({ ...options, language: val });
+    }
+  };
+
   const handleToggleDiarization = (checked: boolean) => {
     onChange({ ...options, enableDiarization: checked });
   };
@@ -64,6 +99,64 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
     <Card className="w-full max-w-4xl mx-auto mb-6 border-border/70 bg-card/60 backdrop-blur-sm shadow-sm transition-all">
       <CardContent className="p-5">
         <div className="flex flex-col gap-4">
+          {/* Spoken Language Selection */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-3 border-b border-border/50 text-xs">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500 mt-0.5">
+                <Globe className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="language-select" className="text-sm font-semibold text-foreground">
+                    Audio Language
+                  </Label>
+                  {options.language && options.language !== 'auto' ? (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold font-mono uppercase">
+                      {options.language} (Forced)
+                    </span>
+                  ) : (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+                      Auto-Detect
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  {options.language && options.language !== 'auto'
+                    ? `Forcing ${options.language.toUpperCase()} avoids language misdetection and speeds up WhisperX transcription.`
+                    : "Automatically detects spoken language. If audio starts with silence/music, consider forcing the language."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                id="language-select"
+                value={showCustomInput ? 'custom' : (options.language || 'auto')}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                disabled={disabled}
+                className="h-8 px-3 rounded-md bg-muted/70 border border-border/60 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-52"
+              >
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+
+              {showCustomInput && (
+                <Input
+                  type="text"
+                  placeholder="e.g. sv"
+                  maxLength={5}
+                  value={options.language || ''}
+                  onChange={(e) => onChange({ ...options, language: e.target.value.toLowerCase().trim() })}
+                  disabled={disabled}
+                  className="w-20 h-8 text-xs font-mono uppercase text-center"
+                />
+              )}
+            </div>
+          </div>
+
           {/* Main Diarization Switch */}
           <div className="flex items-center justify-between gap-4 pb-3 border-b border-border/50">
             <div className="flex items-start gap-3">

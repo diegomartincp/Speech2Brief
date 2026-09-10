@@ -41,6 +41,7 @@ const Index = () => {
     minSpeakers: 1,
     maxSpeakers: 10,
     enableSummarization: true,
+    language: 'auto',
   });
 
   // Real-time step tracking state
@@ -88,6 +89,9 @@ const Index = () => {
     formData.append('file', file);
     formData.append('diarization', options.enableDiarization ? 'true' : 'false');
     formData.append('summarization', options.enableSummarization ? 'true' : 'false');
+    if (options.language && options.language !== 'auto') {
+      formData.append('language', options.language);
+    }
     if (options.enableDiarization && options.enableSpeakerRange) {
       formData.append('min_speakers', options.minSpeakers.toString());
       formData.append('max_speakers', options.maxSpeakers.toString());
