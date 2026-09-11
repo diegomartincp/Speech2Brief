@@ -57,15 +57,17 @@ Run the complete stack inside Docker containers with a single command. Choose th
 
 ### Launch Commands
 
+Make sure you have created `.env` with your `HF_TOKEN` (from `.env.example`). Always include `--env-file .env` when launching:
+
 ```bash
 # 1. macOS Apple Silicon (100% Docker)
-docker compose -f docker/docker-compose.yml --profile cpu-apple-silicon --project-name speech2brief up --build -d
+docker compose --env-file .env -f docker/docker-compose.yml --profile cpu-apple-silicon --project-name speech2brief up --build -d
 
 # 2. Generic CPU (Low power / laptops)
-docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
+docker compose --env-file .env -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
 
 # 3. NVIDIA GPU (Basic, Medium, or Large)
-docker compose -f docker/docker-compose.yml --profile medium --project-name speech2brief up --build -d
+docker compose --env-file .env -f docker/docker-compose.yml --profile large --project-name speech2brief up --build -d
 ```
 
 Once started, open **`http://localhost:8081`** in your browser.

@@ -80,28 +80,48 @@ The script automatically sets up the Python virtual environment, verifies depend
 
 ## 🐳 Option 2: Docker Compose (All Platforms)
 
-Run everything inside Docker containers without installing Python or local AI tools on your host:
+Run everything inside Docker containers without installing Python or local AI tools on your host.
 
-### macOS Apple Silicon (100% Docker)
+> [!IMPORTANT]
+> **Hugging Face Token Required for Speaker Diarization**:
+> PyAnnote 3.1 uses gated models to identify who speaks. To enable speaker identification:
+> 1. Accept the terms for both [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1) and [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0) on Hugging Face.
+> 2. Create a Hugging Face User Access Token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+> 3. Copy `.env.example` to `.env` and set your token:
+>    ```bash
+>    cp .env.example .env
+>    # Or in PowerShell: Copy-Item .env.example .env
+>    ```
+>    Add your token inside `.env`:
+>    ```ini
+>    HF_TOKEN=hf_yourTokenHere
+>    ```
+> *(If `HF_TOKEN` is omitted, Speech2Brief will run normally in Fast Mode without speaker identification).*
+
+### Launch Commands
+
+Always include `--env-file .env` so Docker Compose loads your Hugging Face token:
+
+#### macOS Apple Silicon (100% Docker)
 ```bash
-docker compose -f docker/docker-compose.yml --profile cpu-apple-silicon --project-name speech2brief up --build -d
+docker compose --env-file .env -f docker/docker-compose.yml --profile cpu-apple-silicon --project-name speech2brief up --build -d
 ```
 
-### Generic CPU (Laptops / Systems without GPU)
+#### Generic CPU (Laptops / Systems without GPU)
 ```bash
-docker compose -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
+docker compose --env-file .env -f docker/docker-compose.yml --profile cpu --project-name speech2brief up --build -d
 ```
 
-### NVIDIA GPU Systems
+#### NVIDIA GPU Systems
 ```bash
-# Basic (Entry GPU):
-docker compose -f docker/docker-compose.yml --profile basic --project-name speech2brief up --build -d
+# Basic (Entry GPU, 4–6 GB VRAM):
+docker compose --env-file .env -f docker/docker-compose.yml --profile basic --project-name speech2brief up --build -d
 
-# Medium (Workstation GPU):
-docker compose -f docker/docker-compose.yml --profile medium --project-name speech2brief up --build -d
+# Medium (Workstation GPU, 6–8 GB VRAM):
+docker compose --env-file .env -f docker/docker-compose.yml --profile medium --project-name speech2brief up --build -d
 
-# Large (High-VRAM GPU Server):
-docker compose -f docker/docker-compose.yml --profile large --project-name speech2brief up --build -d
+# Large (High-VRAM GPU Server, ≥ 8 GB VRAM):
+docker compose --env-file .env -f docker/docker-compose.yml --profile large --project-name speech2brief up --build -d
 ```
 
 Open **`http://localhost:8081`** in your browser.
@@ -113,14 +133,18 @@ Open **`http://localhost:8081`** in your browser.
 
 ## 🔑 Speaker Diarization Setup (Hugging Face)
 
-Speaker diarization uses PyAnnote 3.1, which requires accepting user conditions on Hugging Face:
-1. Accept the conditions for [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1) and [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0).
-2. Create a Hugging Face user token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
-3. Add your token in `.env`:
+Speaker diarization distinguishes individual speakers (e.g. `SPEAKER_00`, `SPEAKER_01`). It uses PyAnnote 3.1, which requires user authorization on Hugging Face:
+1. Accept the model conditions:
+   - [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
+   - [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
+2. Generate an Access Token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) (read permissions are sufficient).
+3. Put the token into `.env` at the root of the repository:
    ```ini
    HF_TOKEN=hf_yourTokenHere
    ```
-*(If omitted, Speech2Brief will automatically run in single-speaker Fast Mode without error).*
+4. When launching containers, ensure you use `--env-file .env` so the container inherits the token.
+
+*(If omitted or invalid, Speech2Brief automatically falls back to single-speaker Fast Mode).*
 
 ---
 
@@ -177,5 +201,5 @@ docker run -d \
 ---
 
 ## 📖 Additional Documentation
-* For native CUDA installation on Windows or Linux, see **[INSTALL.md](file:///Users/id05376/Documents/code/Speech2Brief/INSTALL.md)**.
-* For internal architectural specs and developer runbooks, see **[AGENTS.md](file:///Users/id05376/Documents/code/Speech2Brief/AGENTS.md)**.
+* For native CUDA installation on Windows or Linux, see **[INSTALL.md](INSTALL.md)**.
+* For internal architectural specs and developer runbooks, see **[AGENTS.md](AGENTS.md)**.
